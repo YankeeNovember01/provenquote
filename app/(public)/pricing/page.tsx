@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Pricing',
-  description: 'Transparent pricing for lead purchases and market leases. All 15 niches. No hidden fees.',
+  description: 'Transparent pricing for lead purchases and market leases across all 15 niches. Lease prices scale with city traffic and lead volume.',
 };
 
 export default function PricingPage() {
@@ -12,38 +12,37 @@ export default function PricingPage() {
       <div className="text-center mb-16">
         <h1 className="text-5xl font-bold text-white mb-4">Simple, transparent pricing</h1>
         <p className="text-xl text-slate-400 max-w-2xl mx-auto">
-          No setup fees. No contracts. No surprises. Pay a flat monthly rate for leases or per-lead for individual purchases.
+          No setup fees. No contracts. No surprises.
         </p>
       </div>
 
-      {/* City tier note */}
-      <div className="bg-[#1A2342] border border-white/10 rounded-xl p-5 mb-12 text-sm text-slate-400 flex items-start gap-3">
-        <span className="text-[#F59E0B] shrink-0 mt-0.5 text-base">!</span>
-        <span>
-          <strong className="text-white">City tier pricing:</strong> Tier 1 cities (New York, Los Angeles, Chicago, Houston, Phoenix, Philadelphia, San Antonio, San Diego) carry a 1.5x price multiplier on leases due to higher traffic volume and lead value.
-        </span>
-      </div>
-
       <div className="grid lg:grid-cols-2 gap-8">
-        {/* Lead prices */}
+        {/* Individual Lead Prices */}
         <div>
           <div className="bg-[#0F1729] border border-white/[0.08] rounded-2xl overflow-hidden">
-            <div className="bg-[#1A2342] px-6 py-4 border-b border-white/[0.08]">
+            <div className="bg-[#1A2342] px-6 py-5 border-b border-white/[0.08]">
               <h2 className="text-lg font-semibold text-white">Individual Lead Prices</h2>
-              <p className="text-xs text-slate-500 mt-1">Shared with up to 3 buyers. No subscription.</p>
+              <p className="text-xs text-slate-500 mt-1">
+                Shared with up to 3 buyers. Price varies by city size and demand.
+              </p>
             </div>
             <table className="w-full">
               <thead>
                 <tr className="border-b border-white/[0.08]">
                   <th className="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Niche</th>
-                  <th className="text-right px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Per Lead</th>
+                  <th className="text-right px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Price range</th>
                 </tr>
               </thead>
               <tbody>
                 {NICHES.map((n, i) => (
-                  <tr key={n.slug} className={`hover:bg-white/5 transition-colors ${i < NICHES.length - 1 ? 'border-b border-white/[0.04]' : ''}`}>
+                  <tr
+                    key={n.slug}
+                    className={`hover:bg-white/5 transition-colors ${i < NICHES.length - 1 ? 'border-b border-white/[0.04]' : ''}`}
+                  >
                     <td className="px-6 py-3.5 text-sm text-slate-300">{n.name}</td>
-                    <td className="px-6 py-3.5 text-sm font-semibold text-white text-right">${n.avgLeadPrice}</td>
+                    <td className="px-6 py-3.5 text-sm font-semibold text-white text-right">
+                      \${n.leadPriceRange.min}&ndash;\${n.leadPriceRange.max}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -51,48 +50,72 @@ export default function PricingPage() {
           </div>
         </div>
 
-        {/* Lease prices */}
-        <div>
+        {/* Lease Prices */}
+        <div className="flex flex-col gap-6">
           <div className="bg-[#0F1729] border border-white/[0.08] rounded-2xl overflow-hidden">
-            <div className="bg-[#1A2342] px-6 py-4 border-b border-white/[0.08]">
+            <div className="bg-[#1A2342] px-6 py-5 border-b border-white/[0.08]">
               <h2 className="text-lg font-semibold text-white">Monthly Lease Prices</h2>
-              <p className="text-xs text-slate-500 mt-1">Exclusive — 100% of leads go to you. Cancel anytime.</p>
+              <p className="text-xs text-slate-500 mt-1">
+                Exclusive — every lead from that city goes to you. Cancel anytime.
+              </p>
             </div>
             <table className="w-full">
               <thead>
                 <tr className="border-b border-white/[0.08]">
                   <th className="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Niche</th>
-                  <th className="text-right px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Standard/mo</th>
-                  <th className="text-right px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Tier 1/mo</th>
-                  <th className="text-right px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Break-even</th>
+                  <th className="text-right px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Starting from</th>
                 </tr>
               </thead>
               <tbody>
-                {NICHES.map((n, i) => {
-                  const tier1 = Math.round(n.avgLeasePrice * 1.5 / 100) * 100;
-                  const breakEven = Math.ceil(n.avgLeasePrice / n.avgLeadPrice);
-                  return (
-                    <tr key={n.slug} className={`hover:bg-white/5 transition-colors ${i < NICHES.length - 1 ? 'border-b border-white/[0.04]' : ''}`}>
-                      <td className="px-6 py-3.5 text-sm text-slate-300">{n.name}</td>
-                      <td className="px-6 py-3.5 text-sm font-semibold text-white text-right">${n.avgLeasePrice.toLocaleString()}</td>
-                      <td className="px-6 py-3.5 text-sm font-semibold text-[#2563EB] text-right">${tier1.toLocaleString()}</td>
-                      <td className="px-6 py-3.5 text-sm text-slate-500 text-right">{breakEven} leads</td>
-                    </tr>
-                  );
-                })}
+                {NICHES.map((n, i) => (
+                  <tr
+                    key={n.slug}
+                    className={`hover:bg-white/5 transition-colors ${i < NICHES.length - 1 ? 'border-b border-white/[0.04]' : ''}`}
+                  >
+                    <td className="px-6 py-3.5 text-sm text-slate-300">{n.name}</td>
+                    <td className="px-6 py-3.5 text-sm font-semibold text-white text-right">
+                      \${n.leasePriceFrom.toLocaleString()}/mo
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
-          <p className="text-xs text-slate-600 mt-3 px-1">Break-even = leads/month needed for the lease to cost the same as buying those leads individually.</p>
+
+          {/* Dynamic pricing explanation */}
+          <div className="bg-[#0F1729] border border-[#2563EB]/20 rounded-2xl p-6">
+            <h3 className="text-sm font-semibold text-white mb-3">How lease pricing works</h3>
+            <p className="text-sm text-slate-400 leading-relaxed mb-4">
+              Lease prices scale with the city&apos;s monthly traffic and lead volume. A high-traffic market in a major metro generates more leads and commands a higher monthly rate. A smaller city starts at the floor price.
+            </p>
+            <p className="text-sm text-slate-400 leading-relaxed">
+              When you browse a specific market, you see the exact monthly rate for that city — calculated from real traffic data. The prices in this table are the starting floor for each niche.
+            </p>
+            <a
+              href="/markets"
+              className="inline-flex items-center mt-4 text-sm font-semibold text-[#2563EB] hover:text-blue-400 transition-colors"
+            >
+              Browse markets to see live pricing &rarr;
+            </a>
+          </div>
         </div>
       </div>
 
       {/* FAQ */}
       <div className="mt-16 grid md:grid-cols-3 gap-6">
         {[
-          { q: 'Are there setup fees?', a: 'None. Your first charge is your first monthly lease or lead purchase. That\'s it.' },
-          { q: 'Can I change my plan?', a: 'You can cancel, upgrade to a lease, or add more markets at any time. Changes take effect on your next billing cycle.' },
-          { q: 'What payment methods do you accept?', a: 'All major credit cards via Stripe. ACH bank transfer available for annual prepayments.' },
+          {
+            q: 'Are there setup fees?',
+            a: 'None. Your first charge is your first monthly lease payment or lead purchase.',
+          },
+          {
+            q: 'Why does the lease price change by city?',
+            a: "A page ranking in Dallas drives 10x the traffic of a small suburb. Your lease price reflects what that market actually produces — you pay for output, not just a slot.",
+          },
+          {
+            q: 'What payment methods are accepted?',
+            a: 'All major credit cards via Stripe. ACH bank transfer available for annual prepayments.',
+          },
         ].map(({ q, a }) => (
           <div key={q} className="bg-[#0F1729] border border-white/[0.08] rounded-xl p-6">
             <h3 className="font-semibold text-white mb-2 text-sm">{q}</h3>
