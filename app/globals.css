@@ -1,14 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-:root {
-  --bg: #080C14;
-  --surface: #0F1729;
-  --surface-2: #1A2342;
-  --accent: #2563EB;
-  --border: rgba(255,255,255,0.08);
+@theme {
+  --color-background: #080C14;
+  --color-surface: #0F1729;
+  --color-surface-2: #1A2342;
+  --color-accent: #2563EB;
 }
 
 * { box-sizing: border-box; }
