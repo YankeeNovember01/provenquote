@@ -26,11 +26,11 @@ export default async function ForNichePage({ params }: Props) {
   const niche = getNiche(nicheSlug);
   if (!niche) notFound();
 
-  const avgJobValue = niche.avgLeadPrice * 18; // rough estimate
+  const avgJobValue = niche.leadPriceRange.min * 18; // rough estimate
   const leadsPerMonth = 28;
   const closeRate = 0.3;
   const monthlyRevenue = Math.round(leadsPerMonth * closeRate * avgJobValue);
-  const monthlyROI = monthlyRevenue - niche.avgLeasePrice;
+  const monthlyROI = monthlyRevenue - niche.leasePriceFrom;
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-16">
@@ -39,7 +39,7 @@ export default async function ForNichePage({ params }: Props) {
         <p className="text-xs font-semibold text-[#2563EB] uppercase tracking-widest mb-4">For {niche.name} Businesses</p>
         <h1 className="text-5xl font-bold text-white mb-6 leading-tight">
           The {niche.name.toLowerCase()} market in your city<br />
-          is yours for ${niche.avgLeasePrice.toLocaleString()}/mo
+          is yours for ${niche.leasePriceFrom.toLocaleString()}/mo
         </h1>
         <p className="text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
           ProvenQuote.ai gives you exclusive access to every homeowner quote request in your market. One {niche.roleLabel} per city. No bidding. No sharing.
@@ -96,7 +96,7 @@ export default async function ForNichePage({ params }: Props) {
               { label: 'Leads/month (est.)', value: leadsPerMonth.toString() },
               { label: 'Close rate (avg.)', value: '30%' },
               { label: 'Avg. job value', value: `$${avgJobValue.toLocaleString()}` },
-              { label: 'Monthly lease cost', value: `$${niche.avgLeasePrice.toLocaleString()}` },
+              { label: 'Monthly lease cost', value: `$${niche.leasePriceFrom.toLocaleString()}` },
             ].map(({ label, value }) => (
               <div key={label}>
                 <p className="text-xs text-slate-500 mb-1">{label}</p>
@@ -115,7 +115,7 @@ export default async function ForNichePage({ params }: Props) {
             </div>
             <div>
               <p className="text-xs text-slate-500 mb-1">ROI</p>
-              <p className="text-3xl font-bold text-[#2563EB]">{Math.round((monthlyROI / niche.avgLeasePrice) * 100)}x</p>
+              <p className="text-3xl font-bold text-[#2563EB]">{Math.round((monthlyROI / niche.leasePriceFrom) * 100)}x</p>
             </div>
           </div>
           <p className="text-xs text-slate-600 mt-6">
@@ -128,7 +128,7 @@ export default async function ForNichePage({ params }: Props) {
       <section className="mb-20">
         <div className="bg-[#0F1729] border border-white/[0.08] rounded-2xl p-8 text-center">
           <p className="text-lg text-slate-300 italic mb-4 leading-relaxed">
-            &ldquo;I was spending $3,000/month on Google Ads and splitting every lead with 4 other {niche.roleLabel}s. With ProvenQuote, I pay ${niche.avgLeasePrice.toLocaleString()} and every lead is mine. Closed 8 jobs last month.&rdquo;
+            &ldquo;I was spending $3,000/month on Google Ads and splitting every lead with 4 other {niche.roleLabel}s. With ProvenQuote, I pay ${niche.leasePriceFrom.toLocaleString()} and every lead is mine. Closed 8 jobs last month.&rdquo;
           </p>
           <p className="text-sm text-slate-500">— {niche.name} business owner, verified customer</p>
         </div>
