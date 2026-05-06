@@ -53,10 +53,10 @@ export default async function NicheMarketsPage({ params }: Props) {
   if (!niche) notFound();
 
   const markets = MARKETS_BY_NICHE[nicheSlug] ?? [
-    { city: 'Austin', state: 'TX', estLeads: Math.round(niche.avgLeasePrice / 70), price: niche.avgLeasePrice, available: true },
-    { city: 'Denver', state: 'CO', estLeads: Math.round(niche.avgLeasePrice / 80), price: niche.avgLeasePrice, available: true },
-    { city: 'Phoenix', state: 'AZ', estLeads: Math.round(niche.avgLeasePrice / 65), price: niche.avgLeasePrice, available: false },
-    { city: 'Nashville', state: 'TN', estLeads: Math.round(niche.avgLeasePrice / 85), price: niche.avgLeasePrice, available: true },
+    { city: 'Austin', state: 'TX', estLeads: Math.round(niche.leasePriceFrom / 70), price: niche.leasePriceFrom, available: true },
+    { city: 'Denver', state: 'CO', estLeads: Math.round(niche.leasePriceFrom / 80), price: niche.leasePriceFrom, available: true },
+    { city: 'Phoenix', state: 'AZ', estLeads: Math.round(niche.leasePriceFrom / 65), price: niche.leasePriceFrom, available: false },
+    { city: 'Nashville', state: 'TN', estLeads: Math.round(niche.leasePriceFrom / 85), price: niche.leasePriceFrom, available: true },
   ];
 
   return (
@@ -65,7 +65,7 @@ export default async function NicheMarketsPage({ params }: Props) {
         <p className="text-xs font-semibold text-[#2563EB] uppercase tracking-widest mb-3">Market Leases</p>
         <h1 className="text-4xl font-bold text-white mb-4">{niche.name} Markets</h1>
         <p className="text-xl text-slate-400 max-w-2xl">
-          Exclusive {niche.name.toLowerCase()} leads by city. One {niche.roleLabel} per market. ${niche.avgLeasePrice.toLocaleString()}/mo standard pricing.
+          Exclusive {niche.name.toLowerCase()} leads by city. One {niche.roleLabel} per market. ${niche.leasePriceFrom.toLocaleString()}/mo standard pricing.
         </p>
       </div>
 
