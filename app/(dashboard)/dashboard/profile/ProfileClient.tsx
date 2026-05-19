@@ -32,6 +32,7 @@ export default function ProfileClient({ initialBusiness, userId }: Props) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState<'profile' | 'billing'>('profile');
 
   // Form state
   const [businessName, setBusinessName] = useState(initialBusiness?.business_name ?? '');
@@ -86,11 +87,8 @@ export default function ProfileClient({ initialBusiness, userId }: Props) {
 
   return (
     <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Business Profile</h1>
-          <p className="text-sm text-slate-500 mt-1">Manage your public listing and verification status</p>
-        </div>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-white">Business Profile</h1>
         {publicProfileUrl && (
           <a
             href={publicProfileUrl}
@@ -103,6 +101,26 @@ export default function ProfileClient({ initialBusiness, userId }: Props) {
         )}
       </div>
 
+      {/* Tabs */}
+      <div className="flex gap-1 mb-6 bg-[#0F1729] border border-white/[0.08] rounded-xl p-1 w-fit">
+        {(['profile', 'billing'] as const).map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-5 py-2 rounded-lg text-sm font-medium transition-all capitalize ${
+              activeTab === tab
+                ? 'bg-[#2563EB] text-white'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            {tab === 'profile' ? 'Profile' : 'Billing'}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'billing' ? (
+        <BillingSection />
+      ) : (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Profile form */}
         <div className="lg:col-span-2">
@@ -293,6 +311,97 @@ export default function ProfileClient({ initialBusiness, userId }: Props) {
               </button>
             </div>
           )}
+        </div>
+      </div>
+      )}
+    </div>
+  );
+}
+
+function BillingSection() {
+  const ACTIVE_LEASES = [
+    { niche: 'Roofing', city: 'Austin, TX', cost: 2400, nextBilling: 'June 1, 2026', status: 'Active' },
+    { niche: 'HVAC', city: 'Phoenix, AZ', cost: 1800, nextBilling: 'June 3, 2026', status: 'Active' },
+    { niche: 'Solar', city: 'Denver, CO', cost: 2600, nextBilling: 'June 8, 2026', status: 'Active' },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Summary */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="bg-[#0F1729] border border-white/[0.08] rounded-2xl p-6">
+          <p className="text-xs text-slate-500 mb-1">Monthly total</p>
+          <p className="text-3xl font-bold text-white">$6,800</p>
+        </div>
+        <div className="bg-[#0F1729] border border-white/[0.08] rounded-2xl p-6">
+          <p className="text-xs text-slate-500 mb-1">Active leases</p>
+          <p className="text-3xl font-bold text-white">3</p>
+        </div>
+        <div className="bg-[#0F1729] border border-white/[0.08] rounded-2xl p-6">
+          <p className="text-xs text-slate-500 mb-1">Next charge</p>
+          <p className="text-lg font-bold text-white">June 1, 2026</p>
+        </div>
+      </div>
+
+      {/* Active leases */}
+      <div className="bg-[#0F1729] border border-white/[0.08] rounded-2xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-white/[0.08]">
+          <h2 className="text-sm font-semibold text-white">Active Leases</h2>
+        </div>
+        <div className="divide-y divide-white/[0.06]">
+          {ACTIVE_LEASES.map(lease => (
+            <div key={`${lease.niche}-${lease.city}`} className="flex items-center justify-between px-6 py-4">
+              <div>
+                <p className="text-sm font-semibold text-white">{lease.niche} — {lease.city}</p>
+                <p className="text-xs text-slate-500 mt-0.5">Next charge: {lease.nextBilling}</p>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-bold text-white">${lease.cost.toLocaleString()}/mo</span>
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Active</span>
+                <button className="text-xs text-slate-600 hover:text-red-400 transition-colors">Cancel</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Payment method */}
+      <div className="bg-[#0F1729] border border-white/[0.08] rounded-2xl p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold text-white">Payment Method</h2>
+          <button className="text-xs text-[#2563EB] hover:text-white transition-colors">Update</button>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="bg-[#1A2342] border border-white/10 rounded-lg px-4 py-3 text-sm text-slate-300 font-mono">
+            Visa ending in 4242
+          </div>
+          <span className="text-xs text-slate-500">Expires 12/27</span>
+        </div>
+      </div>
+
+      {/* Invoice history */}
+      <div className="bg-[#0F1729] border border-white/[0.08] rounded-2xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-white/[0.08]">
+          <h2 className="text-sm font-semibold text-white">Invoice History</h2>
+        </div>
+        <div className="divide-y divide-white/[0.06]">
+          {[
+            { date: 'May 1, 2026', desc: '3 active market leases', amount: '$6,800', status: 'Paid' },
+            { date: 'Apr 1, 2026', desc: '3 active market leases', amount: '$6,800', status: 'Paid' },
+            { date: 'Mar 1, 2026', desc: '2 active market leases', amount: '$4,200', status: 'Paid' },
+          ].map((inv, i) => (
+            <div key={i} className="flex items-center justify-between px-6 py-4">
+              <div>
+                <p className="text-sm text-white">{inv.date}</p>
+                <p className="text-xs text-slate-500">{inv.desc}</p>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-semibold text-white">{inv.amount}</span>
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">{inv.status}</span>
+                <button className="text-xs text-[#2563EB] hover:text-white transition-colors">Download</button>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

@@ -130,7 +130,7 @@ export default function DashboardMarketsPage() {
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-bold text-white">Market Database</h1>
+        <h1 className="text-2xl font-bold text-white">Lease a Market</h1>
       </div>
 
       <div className="flex gap-6">
