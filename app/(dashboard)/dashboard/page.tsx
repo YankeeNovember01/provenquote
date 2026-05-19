@@ -1,25 +1,13 @@
 'use client';
 
+import Link from 'next/link';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 const STAT_CARDS = [
   { label: 'Active Leases', value: '3', change: '+1 this month', positive: true },
+  { label: 'New Leads', value: '3', change: 'Waiting for your response', positive: null, urgent: true },
   { label: 'Leads This Month', value: '84', change: '+12% vs last month', positive: true },
-  { label: 'Total Markets Available', value: '2,847', change: 'Across all 15 niches', positive: null },
-  { label: 'Spend This Month', value: '$6,800', change: '3 active leases', positive: null },
-];
-
-const RECENT_LEADS = [
-  { date: 'May 6', niche: 'Roofing', city: 'Austin, TX', name: 'James Carter', phone: '(512) 555-0198', service: 'Full replacement', status: 'New' },
-  { date: 'May 6', niche: 'HVAC', city: 'Phoenix, AZ', name: 'Maria Santos', phone: '(602) 555-0134', service: 'AC repair', status: 'Contacted' },
-  { date: 'May 5', niche: 'Roofing', city: 'Austin, TX', name: 'Derek Williams', phone: '(512) 555-0276', service: 'Hail damage', status: 'Quoted' },
-  { date: 'May 5', niche: 'Solar', city: 'Denver, CO', name: 'Linda Park', phone: '(303) 555-0091', service: 'New install', status: 'Closed' },
-  { date: 'May 4', niche: 'HVAC', city: 'Phoenix, AZ', name: 'Tom Bradley', phone: '(602) 555-0183', service: 'System tune-up', status: 'New' },
-  { date: 'May 4', niche: 'Roofing', city: 'Austin, TX', name: 'Sarah Kim', phone: '(512) 555-0312', service: 'Inspection', status: 'Contacted' },
-  { date: 'May 3', niche: 'Solar', city: 'Denver, CO', name: 'Paul Rivera', phone: '(303) 555-0055', service: 'New install', status: 'Quoted' },
-  { date: 'May 3', niche: 'HVAC', city: 'Phoenix, AZ', name: 'Ana Torres', phone: '(602) 555-0228', service: 'Installation', status: 'Closed' },
-  { date: 'May 2', niche: 'Roofing', city: 'Austin, TX', name: 'Mike Johnson', phone: '(512) 555-0409', service: 'Repair', status: 'Lost' },
-  { date: 'May 2', niche: 'Solar', city: 'Denver, CO', name: 'Rachel Green', phone: '(303) 555-0177', service: 'New install', status: 'New' },
+  { label: 'Monthly Spend', value: '$6,800', change: '3 active leases', positive: null },
 ];
 
 const ACTIVE_LEASES = [
@@ -28,7 +16,12 @@ const ACTIVE_LEASES = [
   { niche: 'Solar', city: 'Denver, CO', cost: 2600, nextBilling: 'Jun 8', leadsThisMonth: 19, leadsLastMonth: 22 },
 ];
 
-// Generate 30-day chart data
+const ACTION_ITEMS = [
+  { icon: '🔴', label: 'James Carter', sub: 'Full Roof Replacement · Austin, TX · Score 98', href: '/dashboard/leads', urgency: 'Critical' },
+  { icon: '🟠', label: 'Maria Santos', sub: 'Hail Damage Repair · Austin, TX · Score 82', href: '/dashboard/leads', urgency: 'High' },
+  { icon: '🟠', label: 'Tom Bradley', sub: 'Full Roof Replacement · Austin, TX · Score 94', href: '/dashboard/leads', urgency: 'High' },
+];
+
 const CHART_DATA = Array.from({ length: 30 }, (_, i) => {
   const date = new Date();
   date.setDate(date.getDate() - (29 - i));
@@ -38,28 +31,29 @@ const CHART_DATA = Array.from({ length: 30 }, (_, i) => {
   };
 });
 
-const STATUS_COLORS: Record<string, string> = {
-  New: 'bg-blue-500/10 text-blue-400 border border-blue-500/20',
-  Contacted: 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20',
-  Quoted: 'bg-purple-500/10 text-purple-400 border border-purple-500/20',
-  Closed: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
-  Lost: 'bg-red-500/10 text-red-400 border border-red-500/20',
-};
+const QUICK_ACTIONS = [
+  { label: 'View Lead Inbox', sub: '3 new leads', href: '/dashboard/leads', color: 'bg-[#2563EB]' },
+  { label: 'Browse Markets', sub: 'Find new hubs', href: '/dashboard/markets', color: 'bg-[#1A2342] border border-white/10' },
+  { label: 'Business Profile', sub: 'Update your listing', href: '/dashboard/profile', color: 'bg-[#1A2342] border border-white/10' },
+];
 
 export default function DashboardPage() {
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-bold text-white">Overview</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-white">Good morning, Apex Roofing</h1>
+          <p className="text-sm text-slate-500 mt-1">Here&apos;s what needs your attention today.</p>
+        </div>
         <p className="text-sm text-slate-500">May 2026</p>
       </div>
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {STAT_CARDS.map(({ label, value, change, positive }) => (
-          <div key={label} className="bg-[#0F1729] border border-white/[0.08] rounded-2xl p-6">
+        {STAT_CARDS.map(({ label, value, change, positive, urgent }) => (
+          <div key={label} className={`bg-[#0F1729] border rounded-2xl p-6 ${urgent ? 'border-[#2563EB]/30' : 'border-white/[0.08]'}`}>
             <p className="text-xs text-slate-500 mb-2">{label}</p>
-            <p className="text-3xl font-bold text-white mb-1">{value}</p>
+            <p className={`text-3xl font-bold mb-1 ${urgent ? 'text-[#2563EB]' : 'text-white'}`}>{value}</p>
             <p className={`text-xs ${positive === true ? 'text-[#10B981]' : positive === false ? 'text-[#EF4444]' : 'text-slate-500'}`}>
               {change}
             </p>
@@ -68,10 +62,36 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6 mb-8">
-        {/* Chart */}
+        {/* Action items */}
+        <div className="bg-[#0F1729] border border-white/[0.08] rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-sm font-semibold text-white">New Leads — Respond Now</h2>
+            <Link href="/dashboard/leads" className="text-xs text-[#2563EB] hover:text-white transition-colors">View all →</Link>
+          </div>
+          <div className="space-y-3">
+            {ACTION_ITEMS.map((item, i) => (
+              <Link key={i} href={item.href} className="flex items-start gap-3 p-3 rounded-xl bg-[#1A2342] hover:bg-[#1E2A4A] transition-colors group">
+                <span className="text-base mt-0.5">{item.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-white group-hover:text-[#2563EB] transition-colors">{item.label}</p>
+                  <p className="text-xs text-slate-500 truncate">{item.sub}</p>
+                </div>
+                <span className="text-slate-600 group-hover:text-[#2563EB] transition-colors text-sm">→</span>
+              </Link>
+            ))}
+          </div>
+          <Link
+            href="/dashboard/leads"
+            className="mt-4 w-full flex items-center justify-center gap-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors"
+          >
+            Open Lead Inbox
+          </Link>
+        </div>
+
+        {/* Leads chart */}
         <div className="lg:col-span-2 bg-[#0F1729] border border-white/[0.08] rounded-2xl p-6">
           <h2 className="text-sm font-semibold text-white mb-6">Leads — Last 30 Days</h2>
-          <ResponsiveContainer width="100%" height={200}>
+          <ResponsiveContainer width="100%" height={180}>
             <BarChart data={CHART_DATA} margin={{ top: 0, right: 0, bottom: 0, left: -20 }}>
               <XAxis
                 dataKey="day"
@@ -89,62 +109,69 @@ export default function DashboardPage() {
             </BarChart>
           </ResponsiveContainer>
         </div>
+      </div>
 
-        {/* Active Leases */}
-        <div className="bg-[#0F1729] border border-white/[0.08] rounded-2xl p-6">
-          <h2 className="text-sm font-semibold text-white mb-4">Active Leases</h2>
-          <div className="space-y-4">
+      {/* Active Leases + Quick Actions */}
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Active leases */}
+        <div className="lg:col-span-2 bg-[#0F1729] border border-white/[0.08] rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-sm font-semibold text-white">Active Leases</h2>
+            <Link href="/dashboard/leases" className="text-xs text-[#2563EB] hover:text-white transition-colors">Manage →</Link>
+          </div>
+          <div className="space-y-3">
             {ACTIVE_LEASES.map(lease => {
-              const trend = lease.leadsThisMonth >= lease.leadsLastMonth;
+              const trend = lease.leadsThisMonth - lease.leadsLastMonth;
+              const trendUp = trend >= 0;
               return (
-                <div key={`${lease.niche}-${lease.city}`} className="border-b border-white/[0.06] pb-4 last:border-0 last:pb-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-sm font-medium text-white">{lease.niche}</p>
-                    <span className={`text-xs font-semibold ${trend ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
-                      {trend ? '+' : ''}{lease.leadsThisMonth - lease.leadsLastMonth} leads
-                    </span>
+                <div key={`${lease.niche}-${lease.city}`} className="flex items-center justify-between py-3 border-b border-white/[0.06] last:border-0">
+                  <div>
+                    <p className="text-sm font-semibold text-white">{lease.niche} — {lease.city}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">${lease.cost.toLocaleString()}/mo · Renews {lease.nextBilling}</p>
                   </div>
-                  <p className="text-xs text-slate-500">{lease.city} · ${lease.cost.toLocaleString()}/mo</p>
-                  <p className="text-xs text-slate-600 mt-0.5">Renews {lease.nextBilling} · {lease.leadsThisMonth} leads this month</p>
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-white">{lease.leadsThisMonth} leads</p>
+                    <p className={`text-xs font-semibold ${trendUp ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
+                      {trendUp ? '+' : ''}{trend} vs last mo
+                    </p>
+                  </div>
                 </div>
               );
             })}
           </div>
+          <div className="mt-4 pt-4 border-t border-white/[0.08] flex items-center justify-between">
+            <p className="text-xs text-slate-500">Total monthly</p>
+            <p className="text-lg font-bold text-white">$6,800/mo</p>
+          </div>
         </div>
-      </div>
 
-      {/* Recent Leads */}
-      <div className="bg-[#0F1729] border border-white/[0.08] rounded-2xl overflow-hidden">
-        <div className="bg-[#1A2342] px-6 py-4 border-b border-white/[0.08]">
-          <h2 className="text-sm font-semibold text-white">Recent Leads</h2>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-white/[0.08]">
-                {['Date', 'Niche', 'City', 'Name', 'Phone', 'Service', 'Status'].map(h => (
-                  <th key={h} className="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {RECENT_LEADS.map((lead, i) => (
-                <tr key={i} className="hover:bg-white/5 transition-colors border-b border-white/[0.04] last:border-0">
-                  <td className="px-6 py-3.5 text-sm text-slate-500">{lead.date}</td>
-                  <td className="px-6 py-3.5 text-sm text-white font-medium">{lead.niche}</td>
-                  <td className="px-6 py-3.5 text-sm text-slate-300">{lead.city}</td>
-                  <td className="px-6 py-3.5 text-sm text-white">{lead.name}</td>
-                  <td className="px-6 py-3.5 text-sm text-slate-400 font-mono">{lead.phone}</td>
-                  <td className="px-6 py-3.5 text-sm text-slate-400">{lead.service}</td>
-                  <td className="px-6 py-3.5">
-                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${STATUS_COLORS[lead.status] ?? ''}`}>
-                      {lead.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {/* Quick actions */}
+        <div className="bg-[#0F1729] border border-white/[0.08] rounded-2xl p-6">
+          <h2 className="text-sm font-semibold text-white mb-5">Quick Actions</h2>
+          <div className="space-y-3">
+            {QUICK_ACTIONS.map(({ label, sub, href, color }) => (
+              <Link
+                key={href}
+                href={href}
+                className={`flex items-center justify-between px-4 py-3 rounded-xl text-white font-medium text-sm transition-all hover:opacity-90 ${color}`}
+              >
+                <div>
+                  <p className="font-semibold">{label}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">{sub}</p>
+                </div>
+                <span className="text-slate-500">→</span>
+              </Link>
+            ))}
+          </div>
+
+          <div className="mt-6 pt-5 border-t border-white/[0.08]">
+            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">Available Markets</h3>
+            <p className="text-2xl font-bold text-white">2,847</p>
+            <p className="text-xs text-slate-500 mb-3">Across all 15 niches, 4 countries</p>
+            <Link href="/dashboard/markets" className="text-xs font-medium text-[#2563EB] hover:text-white transition-colors">
+              Browse available →
+            </Link>
+          </div>
         </div>
       </div>
     </div>
