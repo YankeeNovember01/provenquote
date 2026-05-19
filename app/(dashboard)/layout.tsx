@@ -1,61 +1,53 @@
-'use client';
-
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
+import DashboardNav from './DashboardNav';
 
-interface NavItem {
-  href: string;
-  label: string;
-  icon: string;
-  badge?: number;
-  comingSoon?: boolean;
-}
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const supabase = await createClient();
 
-const NAV_GROUPS: { label: string | null; items: NavItem[] }[] = [
-  {
-    label: null,
-    items: [
-      { href: '/dashboard', label: 'Home', icon: '◈' },
-    ],
-  },
-  {
-    label: 'Leads & Sales',
-    items: [
-      { href: '/dashboard/leads', label: 'Lead Inbox', icon: '⬇', badge: 3 },
-      { href: '/dashboard/bids', label: 'Bids & Proposals', icon: '📋' },
-    ],
-  },
-  {
-    label: 'Markets',
-    items: [
-      { href: '/dashboard/leases', label: 'My Leased Hubs', icon: '🏠' },
-      { href: '/dashboard/markets', label: 'Browse Markets', icon: '🗺' },
-      { href: '/dashboard/ads', label: 'Ads Manager', icon: '📣' },
-    ],
-  },
-  {
-    label: 'My Account',
-    items: [
-      { href: '/dashboard/profile', label: 'Business Profile', icon: '🏢' },
-      { href: '/dashboard/billing', label: 'Billing', icon: '💳' },
-      { href: '/dashboard/escrow', label: 'Escrow', icon: '🔒', comingSoon: true },
-    ],
-  },
-  {
-    label: 'Insights',
-    items: [
-      { href: '/dashboard/analytics', label: 'Analytics', icon: '📊' },
-    ],
-  },
-];
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
+  if (!user) {
+    redirect('/sign-in');
+  }
 
-  const isActive = (href: string) => {
-    if (href === '/dashboard') return pathname === '/dashboard';
-    return pathname.startsWith(href);
-  };
+  // Fetch business info
+  const { data: business } = await supabase
+    .from('pq_businesses')
+    .select('*')
+    .eq('user_id', user.id)
+    .single();
+
+  // Count new leads if business has leases
+  let newLeadCount = 0;
+  if (business) {
+    const { data: leases } = await supabase
+      .from('pq_market_leases')
+      .select('niche, city, state')
+      .eq('business_id', business.id)
+      .eq('status', 'active');
+
+    if (leases && leases.length > 0) {
+      // Count new leads for any active lease market
+      for (const lease of leases) {
+        const { count } = await supabase
+          .from('pq_leads')
+          .select('*', { count: 'exact', head: true })
+          .eq('niche', lease.niche)
+          .eq('city', lease.city)
+          .eq('state', lease.state)
+          .eq('status', 'new');
+        newLeadCount += count ?? 0;
+      }
+    }
+  }
+
+  const displayName = business?.business_name ?? user.email ?? 'Business';
+  const displayEmail = business?.email ?? user.email ?? '';
+  const initials = displayName.charAt(0).toUpperCase();
 
   return (
     <div className="flex min-h-screen bg-[#080C14]">
@@ -69,42 +61,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <p className="text-xs text-slate-600 mt-0.5">Business Dashboard</p>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 overflow-y-auto">
-          {NAV_GROUPS.map((group, gi) => (
-            <div key={gi} className={gi > 0 ? 'mt-5' : ''}>
-              {group.label && (
-                <p className="px-3 mb-1.5 text-[10px] font-semibold text-slate-600 uppercase tracking-widest">
-                  {group.label}
-                </p>
-              )}
-              {group.items.map(({ href, label, icon, badge, comingSoon }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all mb-0.5 ${
-                    isActive(href)
-                      ? 'bg-[#2563EB]/10 text-[#2563EB] border border-[#2563EB]/20'
-                      : 'text-slate-400 hover:text-white hover:bg-white/5'
-                  }`}
-                >
-                  <span className="text-base leading-none">{icon}</span>
-                  {label}
-                  {badge && (
-                    <span className="ml-auto text-[10px] font-bold bg-[#2563EB] text-white rounded-full px-1.5 py-0.5">
-                      {badge}
-                    </span>
-                  )}
-                  {comingSoon && (
-                    <span className="ml-auto text-[9px] font-bold bg-amber-500/20 text-amber-400 rounded-full px-1.5 py-0.5 uppercase tracking-wide">
-                      Soon
-                    </span>
-                  )}
-                </Link>
-              ))}
-            </div>
-          ))}
-        </nav>
+        {/* Navigation — client component for active state */}
+        <DashboardNav newLeadCount={newLeadCount} />
 
         {/* Switch to consumer portal */}
         <div className="px-4 pb-2">
@@ -117,17 +75,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </a>
         </div>
 
-        {/* User */}
+        {/* User + Sign Out */}
         <div className="px-4 py-4 border-t border-white/[0.08]">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 mb-3">
             <div className="w-8 h-8 rounded-full bg-[#2563EB]/20 flex items-center justify-center text-xs font-bold text-[#2563EB]">
-              A
+              {initials}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white leading-none mb-0.5 truncate">Apex Roofing Co.</p>
-              <p className="text-xs text-slate-500 truncate">owner@apexroofing.com</p>
+              <p className="text-sm font-medium text-white leading-none mb-0.5 truncate">{displayName}</p>
+              <p className="text-xs text-slate-500 truncate">{displayEmail}</p>
             </div>
           </div>
+          <form action="/api/auth/sign-out" method="POST">
+            <button
+              type="submit"
+              className="w-full text-xs text-slate-500 hover:text-red-400 transition-colors text-left px-2 py-1.5 rounded hover:bg-white/5"
+            >
+              Sign out →
+            </button>
+          </form>
         </div>
       </aside>
 

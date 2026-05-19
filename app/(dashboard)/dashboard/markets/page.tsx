@@ -46,7 +46,6 @@ const MARKET_DATA: MarketRow[] = [
   { niche: 'HVAC', nicheSlug: 'hvac', city: 'Charlotte', state: 'NC', traffic: 4200, estLeads: 36, leasePrice: 1800, leadPrice: 65, status: 'High Demand' },
   { niche: 'Roofing', nicheSlug: 'roofing', city: 'Nashville', state: 'TN', traffic: 3600, estLeads: 30, leasePrice: 2400, leadPrice: 85, status: 'Available' },
   { niche: 'Solar', nicheSlug: 'solar', city: 'Austin', state: 'TX', traffic: 5500, estLeads: 45, leasePrice: 3200, leadPrice: 120, status: 'Available' },
-  // 20 more
   { niche: 'Plumbing', nicheSlug: 'plumbing', city: 'Orlando', state: 'FL', traffic: 4100, estLeads: 35, leasePrice: 1600, leadPrice: 55, status: 'Available' },
   { niche: 'Landscaping', nicheSlug: 'landscaping', city: 'Austin', state: 'TX', traffic: 2800, estLeads: 24, leasePrice: 1200, leadPrice: 45, status: 'Leased' },
   { niche: 'Electrical', nicheSlug: 'electrical', city: 'San Antonio', state: 'TX', traffic: 2900, estLeads: 25, leasePrice: 1400, leadPrice: 50, status: 'Available' },
@@ -82,11 +81,39 @@ export default function DashboardMarketsPage() {
   const [selectedState, setSelectedState] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [sortBy, setSortBy] = useState<'estLeads' | 'leasePrice' | 'traffic'>('estLeads');
+  const [leasingId, setLeasingId] = useState<string | null>(null);
 
   const toggleNiche = (slug: string) => {
     setSelectedNiches(prev =>
       prev.includes(slug) ? prev.filter(s => s !== slug) : [...prev, slug]
     );
+  };
+
+  const handleLease = async (market: MarketRow) => {
+    const key = `${market.niche}-${market.city}-${market.state}`;
+    setLeasingId(key);
+    try {
+      const res = await fetch('/api/stripe/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'lease',
+          niche: market.niche,
+          city: market.city,
+          state: market.state,
+          leasePrice: market.leasePrice,
+        }),
+      });
+      const { url, error } = await res.json();
+      if (error) {
+        alert('Error: ' + error);
+      } else if (url) {
+        window.location.href = url;
+      }
+    } catch {
+      alert('Something went wrong. Please try again.');
+    }
+    setLeasingId(null);
   };
 
   const filtered = MARKET_DATA.filter(m => {
@@ -201,33 +228,41 @@ export default function DashboardMarketsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((m, i) => (
-                    <tr key={i} className="hover:bg-white/5 transition-colors border-b border-white/[0.04] last:border-0">
-                      <td className="px-4 py-3.5 text-sm font-medium text-white whitespace-nowrap">{m.niche}</td>
-                      <td className="px-4 py-3.5 text-sm text-slate-300 whitespace-nowrap">{m.city}</td>
-                      <td className="px-4 py-3.5 text-sm text-slate-500">{m.state}</td>
-                      <td className="px-4 py-3.5 text-sm text-slate-300">{m.traffic.toLocaleString()}</td>
-                      <td className="px-4 py-3.5 text-sm font-semibold text-white">{m.estLeads}</td>
-                      <td className="px-4 py-3.5 text-sm text-white whitespace-nowrap">${m.leasePrice.toLocaleString()}/mo</td>
-                      <td className="px-4 py-3.5 text-sm text-slate-400">${m.leadPrice}</td>
-                      <td className="px-4 py-3.5">
-                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${STATUS_STYLE[m.status]}`}>
-                          {m.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3.5">
-                        {m.status !== 'Leased' ? (
-                          <button className="text-xs font-semibold text-[#2563EB] hover:text-white transition-colors whitespace-nowrap">
-                            Lease Now
-                          </button>
-                        ) : (
-                          <button className="text-xs font-medium text-slate-600 hover:text-slate-400 transition-colors whitespace-nowrap">
-                            Buy Leads
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                  {filtered.map((m, i) => {
+                    const leaseKey = `${m.niche}-${m.city}-${m.state}`;
+                    const isLeasing = leasingId === leaseKey;
+                    return (
+                      <tr key={i} className="hover:bg-white/5 transition-colors border-b border-white/[0.04] last:border-0">
+                        <td className="px-4 py-3.5 text-sm font-medium text-white whitespace-nowrap">{m.niche}</td>
+                        <td className="px-4 py-3.5 text-sm text-slate-300 whitespace-nowrap">{m.city}</td>
+                        <td className="px-4 py-3.5 text-sm text-slate-500">{m.state}</td>
+                        <td className="px-4 py-3.5 text-sm text-slate-300">{m.traffic.toLocaleString()}</td>
+                        <td className="px-4 py-3.5 text-sm font-semibold text-white">{m.estLeads}</td>
+                        <td className="px-4 py-3.5 text-sm text-white whitespace-nowrap">${m.leasePrice.toLocaleString()}/mo</td>
+                        <td className="px-4 py-3.5 text-sm text-slate-400">${m.leadPrice}</td>
+                        <td className="px-4 py-3.5">
+                          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${STATUS_STYLE[m.status]}`}>
+                            {m.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3.5">
+                          {m.status !== 'Leased' ? (
+                            <button
+                              onClick={() => handleLease(m)}
+                              disabled={isLeasing}
+                              className="text-xs font-semibold text-[#2563EB] hover:text-white disabled:opacity-60 transition-colors whitespace-nowrap"
+                            >
+                              {isLeasing ? 'Redirecting...' : 'Lease Now'}
+                            </button>
+                          ) : (
+                            <span className="text-xs font-medium text-slate-600 whitespace-nowrap">
+                              Taken
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
