@@ -70,9 +70,11 @@ export async function GET() {
           : 0,
         interval: sub.items.data[0]?.price.recurring?.interval,
         cancelAtPeriodEnd: sub.cancel_at_period_end,
-        currentPeriodEnd: new Date(sub.current_period_end * 1000).toLocaleDateString('en-US', {
-          month: 'short', day: 'numeric', year: 'numeric',
-        }),
+        currentPeriodEnd: sub.items.data[0]?.current_period_end
+          ? new Date(sub.items.data[0].current_period_end * 1000).toLocaleDateString('en-US', {
+              month: 'short', day: 'numeric', year: 'numeric',
+            })
+          : 'N/A',
         description: sub.items.data[0]?.price.nickname || sub.items.data[0]?.price.product as string || 'ProvenQuote plan',
       })),
     });
