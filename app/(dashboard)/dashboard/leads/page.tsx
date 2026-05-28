@@ -108,6 +108,8 @@ export default function LeadsPage() {
   const [loadingLeadId, setLoadingLeadId] = useState<string | null>(null);
   const [writingBidFor, setWritingBidFor] = useState<string | null>(null);
   const [bidDraft, setBidDraft] = useState<{ leadId: string; text: string } | null>(null);
+  const [newLeadToast, setNewLeadToast] = useState(false);
+  const [newLeadCount, setNewLeadCount] = useState(0);
 
   // Restore filters from localStorage
   useEffect(() => {
@@ -243,6 +245,37 @@ export default function LeadsPage() {
     fetchLeads();
   }, []);
 
+  // ── Supabase Realtime: listen for new leads ────────────────────────────────
+  useEffect(() => {
+    const supabase = createClient();
+
+    const subscription = supabase
+      .channel('pq_leads_realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'pq_leads',
+        },
+        (payload) => {
+          const newLead = payload.new as Lead;
+          setLeads(prev => {
+            if (prev.find(l => l.id === newLead.id)) return prev;
+            return [{ ...newLead, _purchased: false, _status: newLead.status || 'New' }, ...prev];
+          });
+          setNewLeadCount(c => c + 1);
+          setNewLeadToast(true);
+          setTimeout(() => setNewLeadToast(false), 5000);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
+  }, []);
+
   useEffect(() => {
     const initialNotes: Record<string, string> = {};
     const initialStatuses: Record<string, string> = {};
@@ -299,9 +332,21 @@ export default function LeadsPage() {
 
   return (
     <div className="p-8">
+      {/* Real-time new lead toast */}
+      {newLeadToast && (
+        <div className="fixed top-4 right-4 z-50 bg-green-600 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 animate-in slide-in-from-right">
+          <span className="text-lg">🔔</span>
+          <div>
+            <p className="font-semibold text-sm">New lead just came in!</p>
+            <p className="text-xs opacity-80">Check your lead inbox</p>
+          </div>
+          <button onClick={() => setNewLeadToast(false)} className="ml-2 opacity-70 hover:opacity-100 text-lg leading-none">&times;</button>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-white">Leads</h1>
+          <h1 className="text-2xl font-bold text-white">Leads {newLeadCount > 0 && <span className="ml-2 text-sm bg-green-600 text-white rounded-full px-2 py-0.5 align-middle">{newLeadCount} new</span>}</h1>
           <p className="text-sm text-slate-500 mt-1">
             Leads from your leased markets on ProvenQuote
           </p>

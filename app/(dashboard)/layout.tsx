@@ -26,6 +26,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
   const [businessName, setBusinessName] = useState('');
   const [businessEmail, setBusinessEmail] = useState('');
+  const [newLeadCount, setNewLeadCount] = useState(0);
+  const [businessId, setBusinessId] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchBusiness() {
@@ -34,7 +36,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       if (user) {
         const { data: biz } = await supabase
           .from('pq_businesses')
-          .select('subscription_status, stripe_subscription_id, business_name, email')
+          .select('id, subscription_status, stripe_subscription_id, business_name, email')
           .eq('user_id', user.id)
           .single();
         if (biz) {
@@ -42,16 +44,56 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           setSubscriptionStatus(isPro ? 'pro' : 'free');
           setBusinessName(biz.business_name || '');
           setBusinessEmail(biz.email || user.email || '');
+          // Fetch unread lead count
+          const bizId = (biz as Record<string, unknown>).id as string | undefined;
+          if (bizId) {
+            setBusinessId(bizId);
+            const supabase2 = createClient();
+            const { count } = await supabase2
+              .from('pq_leads')
+              .select('id', { count: 'exact', head: true })
+              .eq('tenant_id', bizId)
+              .eq('status', 'new');
+            setNewLeadCount(count ?? 0);
+          }
         }
       }
     }
     fetchBusiness();
   }, []);
 
+  // Supabase Realtime: badge counter for new leads
+  useEffect(() => {
+    if (!businessId) return;
+    const supabase = createClient();
+    const ch = supabase
+      .channel('layout_new_leads')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'pq_leads' },
+        (payload) => {
+          const lead = payload.new as { tenant_id?: string; status?: string };
+          // Count any new lead assigned to this business
+          if (lead.tenant_id === businessId || !lead.tenant_id) {
+            setNewLeadCount(c => c + 1);
+          }
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [businessId]);
+
   const isActive = (href: string) => {
     if (href === '/dashboard') return pathname === '/dashboard';
     return pathname.startsWith(href);
   };
+
+  // Clear badge when user visits the leads page
+  useEffect(() => {
+    if (pathname.startsWith('/dashboard/leads')) {
+      setNewLeadCount(0);
+    }
+  }, [pathname]);
 
   const initial = businessName ? businessName.charAt(0).toUpperCase() : 'A';
 
@@ -76,10 +118,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   : 'text-slate-400 hover:text-white hover:bg-white/5'
               }`}
             >
-              {label}
+              <span className="flex items-center gap-2">
+                {label}
+              </span>
               {comingSoon && (
                 <span className="text-[9px] font-bold bg-amber-500/20 text-amber-400 rounded-full px-1.5 py-0.5 uppercase tracking-wide">
                   Soon
+                </span>
+              )}
+              {href === '/dashboard/leads' && newLeadCount > 0 && (
+                <span className="text-[9px] font-bold bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center">
+                  {newLeadCount > 9 ? '9+' : newLeadCount}
                 </span>
               )}
             </Link>
