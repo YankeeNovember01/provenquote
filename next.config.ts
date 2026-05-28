@@ -13,6 +13,16 @@ const nextConfig: NextConfig = {
         destination: '/dashboard/markets',
         permanent: true,
       },
+      {
+        source: '/dashboard/get-leads/proposals',
+        destination: '/dashboard/proposals',
+        permanent: true,
+      },
+      {
+        source: '/dashboard/get-leads/:path*',
+        destination: '/dashboard/leads',
+        permanent: false,
+      },
     ];
   },
 };
