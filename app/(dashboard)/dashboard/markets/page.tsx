@@ -84,10 +84,26 @@ export default function DashboardMarketsPage() {
   const [sortBy, setSortBy] = useState<'estLeads' | 'leasePrice' | 'traffic'>('estLeads');
   const [leasingId, setLeasingId] = useState<string | null>(null);
   const [leasedKeys, setLeasedKeys] = useState<Set<string>>(new Set());
+  const [isPro, setIsPro] = useState<boolean | null>(null); // null = loading
 
   useEffect(() => {
-    async function fetchLeases() {
+    async function fetchData() {
       const supabase = createClient();
+
+      // Check subscription status
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: biz } = await supabase
+          .from('pq_businesses')
+          .select('subscription_status, stripe_subscription_id')
+          .eq('user_id', user.id)
+          .single();
+        const hasActiveSub = biz?.subscription_status === 'active' || biz?.subscription_status === 'trialing';
+        setIsPro(hasActiveSub);
+      } else {
+        setIsPro(false);
+      }
+
       const { data } = await supabase
         .from('pq_market_leases')
         .select('niche, city, state')
@@ -96,7 +112,7 @@ export default function DashboardMarketsPage() {
         setLeasedKeys(new Set(data.map((l: { niche: string; city: string; state: string }) => `${l.niche}:${l.city}:${l.state}`)));
       }
     }
-    fetchLeases();
+    fetchData();
   }, []);
 
   const toggleNiche = (slug: string) => {
@@ -268,7 +284,9 @@ export default function DashboardMarketsPage() {
                           </span>
                         </td>
                         <td className="px-4 py-3.5">
-                          {m.status !== 'Leased' ? (
+                          {m.status === 'Leased' ? (
+                            <span className="text-xs font-medium text-slate-600 whitespace-nowrap">Taken</span>
+                          ) : isPro ? (
                             <button
                               onClick={() => handleLease(m)}
                               disabled={isLeasing}
@@ -277,9 +295,12 @@ export default function DashboardMarketsPage() {
                               {isLeasing ? 'Redirecting...' : 'Lease Now'}
                             </button>
                           ) : (
-                            <span className="text-xs font-medium text-slate-600 whitespace-nowrap">
-                              Taken
-                            </span>
+                            <a
+                              href="/dashboard/billing"
+                              className="text-xs font-semibold text-amber-400 hover:text-amber-300 transition-colors whitespace-nowrap flex items-center gap-1"
+                            >
+                              🔒 Pro required
+                            </a>
                           )}
                         </td>
                       </tr>

@@ -37,7 +37,7 @@ export default async function AnalyticsPage() {
     .select('*')
     .eq('business_id', business.id);
 
-  // Fetch leads for each active lease market (last 30 days)
+  // Fetch leads for each active lease market (last 30 days) — only THIS business's leads
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
@@ -51,18 +51,26 @@ export default async function AnalyticsPage() {
   }
 
   let allLeads: LeadRow[] = [];
-  if (leases && leases.length > 0) {
-    for (const lease of leases) {
-      const { data: marketLeads } = await supabase
-        .from('pq_leads')
-        .select('id, created_at, status, niche, city, state')
-        .eq('niche', lease.niche)
-        .eq('city', lease.city)
-        .eq('state', lease.state)
-        .gte('created_at', thirtyDaysAgo.toISOString())
-        .order('created_at', { ascending: true });
-      if (marketLeads) allLeads.push(...marketLeads);
-    }
+
+  // Get leads assigned via market lease (tenant_id = my business)
+  const { data: leasedLeads } = await supabase
+    .from('pq_leads')
+    .select('id, created_at, status, niche, city, state')
+    .eq('tenant_id', business.id)
+    .gte('created_at', thirtyDaysAgo.toISOString())
+    .order('created_at', { ascending: true });
+  if (leasedLeads) allLeads.push(...leasedLeads);
+
+  // Get individually purchased leads
+  const purchasedLeadIds = (purchases ?? []).map((p: { lead_id: string }) => p.lead_id);
+  if (purchasedLeadIds.length > 0) {
+    const { data: purchasedLeads } = await supabase
+      .from('pq_leads')
+      .select('id, created_at, status, niche, city, state')
+      .in('id', purchasedLeadIds)
+      .gte('created_at', thirtyDaysAgo.toISOString())
+      .order('created_at', { ascending: true });
+    if (purchasedLeads) allLeads.push(...purchasedLeads);
   }
 
   // Dedupe
