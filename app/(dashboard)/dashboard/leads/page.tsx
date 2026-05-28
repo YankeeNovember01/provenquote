@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 
 interface Lead {
@@ -321,11 +322,13 @@ export default function LeadsPage() {
 
   const allNiches = [...new Set(leads.map(l => l.niche).filter(Boolean))].sort() as string[];
 
+  const [mainTab, setMainTab] = useState<'get-leads' | 'inbox'>('get-leads');
+
   if (loading) {
     return (
       <div className="p-8">
-        <h1 className="text-2xl font-bold text-white mb-4">Leads</h1>
-        <p className="text-slate-500">Loading leads...</p>
+        <h1 className="text-2xl font-bold text-white mb-4">Get Leads</h1>
+        <p className="text-slate-500">Loading...</p>
       </div>
     );
   }
@@ -344,15 +347,147 @@ export default function LeadsPage() {
         </div>
       )}
 
+      {/* Page header */}
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Leads {newLeadCount > 0 && <span className="ml-2 text-sm bg-green-600 text-white rounded-full px-2 py-0.5 align-middle">{newLeadCount} new</span>}</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Leads from your leased markets on ProvenQuote
-          </p>
-        </div>
+        <h1 className="text-2xl font-bold text-white">Get Leads</h1>
       </div>
 
+      {/* Main tab switcher */}
+      <div className="flex gap-1 mb-8 bg-[#0F1729] border border-white/[0.08] rounded-xl p-1 w-fit">
+        <button
+          onClick={() => setMainTab('get-leads')}
+          className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${
+            mainTab === 'get-leads'
+              ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
+              : 'text-slate-500 hover:text-white'
+          }`}
+        >
+          How to Get Leads
+        </button>
+        <button
+          onClick={() => setMainTab('inbox')}
+          className={`px-5 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+            mainTab === 'inbox'
+              ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
+              : 'text-slate-500 hover:text-white'
+          }`}
+        >
+          My Lead Inbox
+          {newLeadCount > 0 && (
+            <span className="text-[10px] font-bold bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center">
+              {newLeadCount > 9 ? '9+' : newLeadCount}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* GET LEADS HUB */}
+      {mainTab === 'get-leads' && (
+        <div>
+          <p className="text-slate-400 mb-8">Choose how you want to grow your business. Each method works differently — pick what fits your goals.</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Buy Leads */}
+            <div className="bg-[#0F1729] border border-white/[0.08] rounded-2xl p-6 flex flex-col">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-xl mb-4">🎯</div>
+              <h3 className="text-lg font-bold text-white mb-1">Buy Leads</h3>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full px-2 py-0.5 font-medium">{leads.filter(l => !l._purchased).length} available</span>
+              </div>
+              <ul className="text-sm text-slate-400 space-y-2 mb-6 flex-1">
+                <li className="flex items-start gap-2"><span className="text-emerald-400 mt-0.5">✓</span> Pay per lead — no monthly fee</li>
+                <li className="flex items-start gap-2"><span className="text-emerald-400 mt-0.5">✓</span> Full contact info unlocked on purchase</li>
+                <li className="flex items-start gap-2"><span className="text-emerald-400 mt-0.5">✓</span> Lead is exclusively yours forever</li>
+              </ul>
+              <button
+                onClick={() => { setMainTab('inbox'); }}
+                className="w-full text-center text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl transition"
+              >
+                Browse Leads →
+              </button>
+            </div>
+
+            {/* Lease a Market */}
+            <div className="bg-[#0F1729] border border-emerald-500/20 rounded-2xl p-6 flex flex-col relative overflow-hidden">
+              <div className="absolute top-3 right-3 text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full px-2 py-0.5 uppercase tracking-wide">Exclusive territory</div>
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-xl mb-4">📍</div>
+              <h3 className="text-lg font-bold text-white mb-1">Lease a Market</h3>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xs bg-slate-700 text-slate-300 rounded-full px-2 py-0.5 font-medium">3,770 markets open</span>
+              </div>
+              <ul className="text-sm text-slate-400 space-y-2 mb-6 flex-1">
+                <li className="flex items-start gap-2"><span className="text-emerald-400 mt-0.5">✓</span> All leads in that city × niche are yours</li>
+                <li className="flex items-start gap-2"><span className="text-emerald-400 mt-0.5">✓</span> Monthly flat rate — no per-lead cost</li>
+                <li className="flex items-start gap-2"><span className="text-emerald-400 mt-0.5">✓</span> Competitors locked out of your market</li>
+              </ul>
+              <Link
+                href="/dashboard/markets"
+                className="w-full block text-center text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl transition"
+              >
+                View Markets →
+              </Link>
+            </div>
+
+            {/* Proposals & Bids */}
+            <div className="bg-[#0F1729] border border-white/[0.08] rounded-2xl p-6 flex flex-col relative opacity-80">
+              <div className="absolute top-3 right-3 text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-full px-2 py-0.5 uppercase tracking-wide">Pro</div>
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-xl mb-4">📋</div>
+              <h3 className="text-lg font-bold text-white mb-1">Proposals &amp; Bids</h3>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xs bg-slate-700 text-slate-300 rounded-full px-2 py-0.5 font-medium">0 open requests</span>
+              </div>
+              <ul className="text-sm text-slate-400 space-y-2 mb-6 flex-1">
+                <li className="flex items-start gap-2"><span className="text-emerald-400 mt-0.5">✓</span> Browse homeowner project requests</li>
+                <li className="flex items-start gap-2"><span className="text-emerald-400 mt-0.5">✓</span> Submit competitive bids on any job</li>
+                <li className="flex items-start gap-2"><span className="text-emerald-400 mt-0.5">✓</span> Unlimited bids with Pro account</li>
+              </ul>
+              <Link
+                href="/dashboard/proposals"
+                className="w-full block text-center text-sm font-semibold bg-white/5 hover:bg-white/10 border border-white/10 text-white py-2.5 rounded-xl transition"
+              >
+                View Proposals →
+              </Link>
+            </div>
+          </div>
+
+          {/* Recent Activity */}
+          {leads.length > 0 && (
+            <div className="mt-10">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-base font-semibold text-white">Recent Activity</h3>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
+                  <span className="text-xs text-slate-500">Live</span>
+                </div>
+              </div>
+              <p className="text-xs text-slate-600 mb-4">Latest leads posted on ProvenQuote</p>
+              <div className="space-y-2">
+                {leads.slice(0, 5).map(l => (
+                  <div
+                    key={l.id}
+                    onClick={() => setMainTab('inbox')}
+                    className="bg-[#0F1729] border border-white/[0.06] rounded-xl p-4 cursor-pointer hover:border-emerald-500/20 transition-all flex items-center justify-between"
+                  >
+                    <div>
+                      <span className="text-sm font-medium text-white">{l.homeowner_name || [l.first_name, l.last_name].filter(Boolean).join(' ') || 'New Request'}</span>
+                      <span className="text-xs text-slate-500 ml-2">{l.city}, {l.state}</span>
+                      <span className="text-xs text-slate-600 ml-2">{l.niche}</span>
+                    </div>
+                    <span className="text-xs text-emerald-400 font-medium">${l.lead_price ?? 85}</span>
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={() => setMainTab('inbox')}
+                className="mt-4 text-xs text-emerald-400 hover:text-white transition-colors"
+              >View all {leads.length} leads →</button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* LEAD INBOX — only render when inbox tab is active */}
+      {mainTab === 'inbox' && (
+      <div>
       {/* Filter row */}
       <div className="flex flex-wrap gap-3 mb-6">
         {/* Status tabs */}
@@ -693,6 +828,8 @@ export default function LeadsPage() {
             </>
           )}
         </div>
+      )}
+      </div>
       )}
     </div>
   );
