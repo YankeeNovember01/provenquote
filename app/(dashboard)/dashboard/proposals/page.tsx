@@ -1,95 +1,129 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import Link from 'next/link';
 
-// These are proposals submitted by homeowners on provenquote.com who want multiple quotes.
-// The business can choose to respond or pass.
-const PROPOSALS = [
-  {
-    id: 'P-1042',
-    submittedAt: 'May 19, 2026 — 8:42 AM',
-    name: 'Sarah Kim',
-    city: 'Austin, TX',
-    service: 'Full Roof Replacement',
-    description: 'I have a 2,100 sq ft home and my roof is about 15 years old. Had some minor hail damage and my insurance company suggested getting 3 quotes before they process a claim. Looking for someone who can inspect and give me a written estimate this week.',
-    budget: '$12,000 – $20,000',
-    timeline: 'Within 2 weeks',
-    responded: false,
-  },
-  {
-    id: 'P-1039',
-    submittedAt: 'May 18, 2026 — 3:15 PM',
-    name: 'Paul Rivera',
-    city: 'Austin, TX',
-    service: 'Roof Inspection',
-    description: 'Buying a home and the inspector flagged the roof. Seller agreed to a credit if we can get 2–3 contractor opinions. Just need a written inspection report.',
-    budget: 'Inspection only',
-    timeline: 'This week',
-    responded: false,
-  },
-  {
-    id: 'P-1031',
-    submittedAt: 'May 17, 2026 — 11:02 AM',
-    name: 'Ana Torres',
-    city: 'Austin, TX',
-    service: 'Hail Damage Repair',
-    description: 'Storm last month caused visible damage to several shingles on the south side. Need someone to assess and provide a quote — insurance will cover approved repairs.',
-    budget: '$3,000 – $8,000',
-    timeline: 'No rush, within the month',
-    responded: true,
-    yourResponse: 'Hi Ana, I can come out Tuesday or Wednesday this week for a free inspection. We are GAF certified and work directly with insurance adjusters. I will call you this afternoon to confirm.',
-    respondedAt: 'May 17, 2026 — 2:44 PM',
-  },
-];
+interface Proposal {
+  id: string;
+  lead_id: string;
+  message: string;
+  status: 'sent' | 'viewed' | 'accepted' | 'declined';
+  proposed_price: number | null;
+  created_at: string;
+  lead?: {
+    homeowner_name: string;
+    city: string;
+    state: string;
+    service_type: string;
+    description: string;
+    estimated_budget: string | null;
+    urgency: string | null;
+  };
+}
 
 export default function ProposalsPage() {
-  const [proposals, setProposals] = useState(PROPOSALS);
-  const [responses, setResponses] = useState<Record<string, string>>({});
-  const [sending, setSending] = useState<string | null>(null);
-  const [filter, setFilter] = useState<'all' | 'new' | 'responded'>('all');
+  const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<'all' | 'sent' | 'accepted' | 'declined'>('all');
+
+  useEffect(() => {
+    async function fetchProposals() {
+      const supabase = createClient();
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoading(false); return; }
+
+      // Get this user's business
+      const { data: business } = await supabase
+        .from('pq_businesses')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!business) { setLoading(false); return; }
+
+      const { data, error } = await supabase
+        .from('pq_proposals')
+        .select(`
+          id,
+          lead_id,
+          message,
+          status,
+          proposed_price,
+          created_at,
+          lead:pq_leads(
+            homeowner_name,
+            city,
+            state,
+            service_type,
+            description,
+            estimated_budget,
+            urgency
+          )
+        `)
+        .eq('business_id', business.id)
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        setProposals(data as unknown as Proposal[]);
+      }
+      setLoading(false);
+    }
+
+    fetchProposals();
+  }, []);
 
   const filtered = proposals.filter(p => {
-    if (filter === 'new') return !p.responded;
-    if (filter === 'responded') return p.responded;
+    if (filter === 'sent') return p.status === 'sent' || p.status === 'viewed';
+    if (filter === 'accepted') return p.status === 'accepted';
+    if (filter === 'declined') return p.status === 'declined';
     return true;
   });
 
-  const sendResponse = (id: string) => {
-    if (!responses[id]?.trim()) return;
-    setSending(id);
-    setTimeout(() => {
-      setProposals(prev =>
-        prev.map(p =>
-          p.id === id
-            ? { ...p, responded: true, yourResponse: responses[id], respondedAt: 'Just now' }
-            : p
-        )
-      );
-      setSending(null);
-    }, 800);
+  const pendingCount = proposals.filter(p => p.status === 'sent' || p.status === 'viewed').length;
+
+  const statusStyle: Record<string, string> = {
+    sent: 'bg-blue-500/10 text-blue-400 border border-blue-500/20',
+    viewed: 'bg-amber-500/10 text-amber-400 border border-amber-500/20',
+    accepted: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
+    declined: 'bg-red-500/10 text-red-400 border border-red-500/20',
   };
 
-  const newCount = proposals.filter(p => !p.responded).length;
+  const statusLabel: Record<string, string> = {
+    sent: 'Sent',
+    viewed: 'Viewed',
+    accepted: 'Accepted',
+    declined: 'Declined',
+  };
 
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-white">Proposals</h1>
+          <h1 className="text-2xl font-bold text-white">My Proposals</h1>
           <p className="text-sm text-slate-500 mt-1">
-            Homeowners on ProvenQuote requesting quotes from local businesses
+            Bids you&apos;ve sent to homeowners on ProvenQuote
           </p>
         </div>
-        {newCount > 0 && (
-          <div className="text-xs font-semibold bg-[#2563EB]/10 border border-[#2563EB]/20 text-[#2563EB] rounded-full px-4 py-2">
-            {newCount} awaiting your response
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          {pendingCount > 0 && (
+            <div className="text-xs font-semibold bg-[#2563EB]/10 border border-[#2563EB]/20 text-[#2563EB] rounded-full px-4 py-2">
+              {pendingCount} awaiting reply
+            </div>
+          )}
+          <Link
+            href="/dashboard/leads"
+            className="text-sm font-semibold bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-5 py-2.5 rounded-xl transition-colors"
+          >
+            Send New Bid
+          </Link>
+        </div>
       </div>
 
       {/* Filter */}
       <div className="flex gap-2 mb-6">
-        {(['all', 'new', 'responded'] as const).map(f => (
+        {(['all', 'sent', 'accepted', 'declined'] as const).map(f => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -99,80 +133,103 @@ export default function ProposalsPage() {
                 : 'bg-[#0F1729] border-white/[0.08] text-slate-400 hover:text-white'
             }`}
           >
-            {f === 'all' ? 'All' : f === 'new' ? 'Needs Response' : 'Responded'}
+            {f === 'all' ? 'All' : f === 'sent' ? 'Pending' : f === 'accepted' ? 'Accepted' : 'Declined'}
           </button>
         ))}
       </div>
 
-      <div className="space-y-4">
-        {filtered.map(p => (
-          <div key={p.id} className={`bg-[#0F1729] border rounded-2xl p-6 ${!p.responded ? 'border-[#2563EB]/20' : 'border-white/[0.08]'}`}>
-            {/* Header */}
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <div className="flex items-center gap-3 mb-1">
-                  <h3 className="text-base font-semibold text-white">{p.name}</h3>
-                  <span className="text-xs text-slate-500">{p.city}</span>
-                  <span className="text-xs text-slate-600">{p.id}</span>
-                  {!p.responded && (
-                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#2563EB]/10 text-[#2563EB] border border-[#2563EB]/20">
-                      New
-                    </span>
+      {loading ? (
+        <div className="flex items-center justify-center py-24">
+          <div className="w-6 h-6 border-2 border-[#2563EB] border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="bg-[#0F1729] border border-white/[0.08] rounded-2xl p-16 text-center">
+          {proposals.length === 0 ? (
+            <>
+              <p className="text-slate-400 text-base mb-2">No proposals yet.</p>
+              <p className="text-slate-600 text-sm mb-6">
+                Go to Lead Inbox to view leads and send your first bid.
+              </p>
+              <Link
+                href="/dashboard/leads"
+                className="inline-block text-sm font-semibold bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-6 py-3 rounded-xl transition-colors"
+              >
+                Go to Lead Inbox
+              </Link>
+            </>
+          ) : (
+            <p className="text-slate-500">No proposals match this filter.</p>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {filtered.map(p => {
+            const lead = p.lead;
+            const sentDate = new Date(p.created_at).toLocaleDateString('en-US', {
+              month: 'short', day: 'numeric', year: 'numeric',
+            });
+
+            return (
+              <div
+                key={p.id}
+                className="bg-[#0F1729] border border-white/[0.08] rounded-2xl p-6"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <div className="flex items-center gap-3 mb-1">
+                      <h3 className="text-base font-semibold text-white">
+                        {lead?.homeowner_name ?? 'Homeowner'}
+                      </h3>
+                      {lead?.city && (
+                        <span className="text-xs text-slate-500">
+                          {lead.city}, {lead.state}
+                        </span>
+                      )}
+                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${statusStyle[p.status]}`}>
+                        {statusLabel[p.status]}
+                      </span>
+                    </div>
+                    <p className="text-sm font-medium text-slate-300">
+                      {lead?.service_type ?? 'Service'}
+                    </p>
+                    <p className="text-xs text-slate-600 mt-0.5">Sent {sentDate}</p>
+                  </div>
+                  {p.proposed_price != null && (
+                    <div className="text-right text-xs text-slate-500">
+                      Your bid:{' '}
+                      <span className="text-slate-300 font-semibold">
+                        ${p.proposed_price.toLocaleString()}
+                      </span>
+                    </div>
                   )}
                 </div>
-                <p className="text-sm font-medium text-slate-300">{p.service}</p>
-                <p className="text-xs text-slate-600 mt-0.5">{p.submittedAt}</p>
-              </div>
-              <div className="text-right text-xs text-slate-500 space-y-1">
-                <p>Budget: <span className="text-slate-300">{p.budget}</span></p>
-                <p>Timeline: <span className="text-slate-300">{p.timeline}</span></p>
-              </div>
-            </div>
 
-            {/* What they're asking */}
-            <div className="bg-[#1A2342] rounded-xl p-4 mb-4">
-              <p className="text-xs text-slate-500 mb-2">Their request</p>
-              <p className="text-sm text-slate-300 leading-relaxed">{p.description}</p>
-            </div>
+                {lead?.description && (
+                  <div className="bg-[#1A2342] rounded-xl p-4 mb-4">
+                    <p className="text-xs text-slate-500 mb-2">Their request</p>
+                    <p className="text-sm text-slate-300 leading-relaxed line-clamp-3">
+                      {lead.description}
+                    </p>
+                    <div className="flex gap-4 mt-2 text-xs text-slate-600">
+                      {lead.estimated_budget && (
+                        <span>Budget: <span className="text-slate-400">{lead.estimated_budget}</span></span>
+                      )}
+                      {lead.urgency && (
+                        <span>Urgency: <span className="text-slate-400">{lead.urgency}</span></span>
+                      )}
+                    </div>
+                  </div>
+                )}
 
-            {/* Response area */}
-            {p.responded ? (
-              <div className="border-t border-white/[0.06] pt-4">
-                <p className="text-xs text-slate-500 mb-2">Your response — {p.respondedAt}</p>
-                <p className="text-sm text-slate-400 leading-relaxed">{p.yourResponse}</p>
-              </div>
-            ) : (
-              <div>
-                <p className="text-xs text-slate-500 mb-2">Write your response</p>
-                <textarea
-                  value={responses[p.id] ?? ''}
-                  onChange={e => setResponses(prev => ({ ...prev, [p.id]: e.target.value }))}
-                  placeholder={`Hi ${p.name.split(' ')[0]}, I'd love to help with your ${p.service.toLowerCase()}...`}
-                  className="w-full bg-[#1A2342] border border-white/10 text-white rounded-xl px-4 py-3 text-sm resize-none h-24 placeholder-slate-600 focus:outline-none focus:border-[#2563EB]/40 mb-3"
-                />
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => sendResponse(p.id)}
-                    disabled={!responses[p.id]?.trim() || sending === p.id}
-                    className="text-sm font-semibold bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-40 text-white px-5 py-2.5 rounded-xl transition-colors"
-                  >
-                    {sending === p.id ? 'Sending...' : 'Send Response'}
-                  </button>
-                  <button className="text-sm font-medium text-slate-500 hover:text-white transition-colors px-4 py-2.5">
-                    Pass
-                  </button>
+                <div className="border-t border-white/[0.06] pt-4">
+                  <p className="text-xs text-slate-500 mb-2">Your bid message</p>
+                  <p className="text-sm text-slate-400 leading-relaxed">{p.message}</p>
                 </div>
               </div>
-            )}
-          </div>
-        ))}
-
-        {filtered.length === 0 && (
-          <div className="bg-[#0F1729] border border-white/[0.08] rounded-2xl p-16 text-center">
-            <p className="text-slate-500">No proposals here.</p>
-          </div>
-        )}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

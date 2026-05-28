@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NICHES } from '@/lib/niches';
+import { createClient } from '@/lib/supabase/client';
 
 interface MarketRow {
   niche: string;
@@ -82,6 +83,21 @@ export default function DashboardMarketsPage() {
   const [statusFilter, setStatusFilter] = useState('All');
   const [sortBy, setSortBy] = useState<'estLeads' | 'leasePrice' | 'traffic'>('estLeads');
   const [leasingId, setLeasingId] = useState<string | null>(null);
+  const [leasedKeys, setLeasedKeys] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    async function fetchLeases() {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from('pq_market_leases')
+        .select('niche, city, state')
+        .eq('status', 'active');
+      if (data) {
+        setLeasedKeys(new Set(data.map((l: { niche: string; city: string; state: string }) => `${l.niche}:${l.city}:${l.state}`)));
+      }
+    }
+    fetchLeases();
+  }, []);
 
   const toggleNiche = (slug: string) => {
     setSelectedNiches(prev =>
@@ -116,14 +132,20 @@ export default function DashboardMarketsPage() {
     setLeasingId(null);
   };
 
-  const filtered = MARKET_DATA.filter(m => {
+  // Override hardcoded status with real DB data
+  const marketsWithRealStatus = MARKET_DATA.map(m => ({
+    ...m,
+    status: leasedKeys.has(`${m.niche}:${m.city}:${m.state}`) ? 'Leased' as const : m.status,
+  }));
+
+  const filtered = marketsWithRealStatus.filter(m => {
     if (selectedNiches.length > 0 && !selectedNiches.includes(m.nicheSlug)) return false;
     if (selectedState && m.state !== selectedState) return false;
     if (statusFilter !== 'All' && m.status !== statusFilter) return false;
     return true;
   }).sort((a, b) => b[sortBy] - a[sortBy]);
 
-  const available = filtered.filter(m => m.status === 'Available').length;
+  const available = filtered.filter(m => m.status !== 'Leased').length;
   const states = new Set(filtered.map(m => m.state)).size;
   const niches = new Set(filtered.map(m => m.nicheSlug)).size;
 
