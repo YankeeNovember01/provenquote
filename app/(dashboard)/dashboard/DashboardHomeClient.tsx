@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface Props {
@@ -9,9 +10,13 @@ interface Props {
   leads: any[];
   newLeads: any[];
   monthlySpend: number;
+  isPro?: boolean;
 }
 
-export default function DashboardHomeClient({ business, leases, leads, newLeads, monthlySpend }: Props) {
+export default function DashboardHomeClient({ business, leases, leads, newLeads, monthlySpend, isPro = false }: Props) {
+  const searchParams = useSearchParams();
+  const justOnboarded = searchParams.get('onboarded') === '1';
+
   // Build 30-day chart from real lead data
   const chartData = (() => {
     const days: Record<string, number> = {};
@@ -32,6 +37,23 @@ export default function DashboardHomeClient({ business, leases, leads, newLeads,
 
   return (
     <div className="p-8">
+      {/* Welcome banner shown right after first-time setup */}
+      {justOnboarded && (
+        <div className="mb-6 flex items-center gap-4 bg-[#2563EB]/10 border border-[#2563EB]/20 rounded-2xl px-6 py-4">
+          <span className="text-2xl">🎉</span>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-white">You're all set! Welcome to ProvenQuote.</p>
+            <p className="text-xs text-slate-400 mt-0.5">Here are leads matching your profile. Lease a market to start receiving them directly.</p>
+          </div>
+          <Link
+            href="/dashboard/markets"
+            className="flex-shrink-0 text-xs font-semibold bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            Explore Markets →
+          </Link>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-white">Welcome, {firstName}</h1>
@@ -123,6 +145,54 @@ export default function DashboardHomeClient({ business, leases, leads, newLeads,
               <Bar dataKey="leads" fill="#2563EB" radius={[3, 3, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* AI Pipeline Insights — PRO */}
+      <div className="mb-6">
+        <div className="bg-[#0F1729] border border-white/[0.08] rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-semibold text-white">AI Pipeline Insights</h2>
+              {!isPro && (
+                <span className="text-[9px] font-bold bg-blue-600/20 text-blue-400 border border-blue-500/20 rounded-full px-2 py-0.5 uppercase tracking-wide">PRO</span>
+              )}
+            </div>
+            {isPro && <span className="text-xs text-emerald-400">● Live</span>}
+          </div>
+          {isPro ? (
+            <p className="text-sm text-slate-400">Pipeline analytics will appear here as your data grows.</p>
+          ) : (
+            <div className="relative">
+              {/* Blurred preview */}
+              <div className="blur-sm pointer-events-none select-none opacity-50">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+                  {[
+                    { label: 'Close rate', value: '67%' },
+                    { label: 'Win rate', value: '43%' },
+                    { label: 'Avg deal size', value: '$8,400' },
+                    { label: 'Pipeline value', value: '$61,200' },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="bg-white/5 rounded-lg p-3 text-center">
+                      <p className="text-2xl font-bold text-white">{value}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">{label}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="h-24 bg-white/5 rounded-lg" />
+              </div>
+              {/* Overlay */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center bg-[#0F1729]/90 px-6 py-4 rounded-2xl border border-blue-500/20">
+                  <p className="text-sm font-semibold text-white mb-1">🔒 Pro Feature</p>
+                  <p className="text-xs text-slate-400 mb-3">Unlock AI-powered close rates, pipeline value, and win analytics.</p>
+                  <Link href="/dashboard/upgrade" className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg inline-block transition-colors font-medium">
+                    Unlock Insights →
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
