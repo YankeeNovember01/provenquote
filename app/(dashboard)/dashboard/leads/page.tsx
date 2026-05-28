@@ -17,6 +17,9 @@ interface Lead {
   tenant_id: string | null;
   is_exclusive: boolean | null;
   purchased_by: string[] | null;
+  lead_price: number | null;
+  status: string | null;
+  business_notes: string | null;
   // UI-only fields
   _purchased?: boolean;
   _status?: string;
@@ -36,6 +39,46 @@ export default function LeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [businessId, setBusinessId] = useState<string | null>(null);
+  const [loadingLeadId, setLoadingLeadId] = useState<string | null>(null);
+
+  const handlePurchaseLead = async (lead: Lead) => {
+    setLoadingLeadId(lead.id);
+    try {
+      const res = await fetch('/api/stripe/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'lead',
+          leadId: lead.id,
+          leadPrice: lead.lead_price ?? 85,
+          niche: lead.niche,
+          city: lead.city,
+          state: lead.state,
+        }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert(data.error || 'Failed to start checkout');
+      }
+    } catch {
+      alert('Checkout failed. Try again.');
+    } finally {
+      setLoadingLeadId(null);
+    }
+  };
+
+  const handleStatusChange = async (leadId: string, newStatus: string) => {
+    setStatuses(prev => ({ ...prev, [leadId]: newStatus }));
+    const supabase = createClient();
+    await supabase.from('pq_leads').update({ status: newStatus }).eq('id', leadId);
+  };
+
+  const handleNotesSave = async (leadId: string, noteText: string) => {
+    const supabase = createClient();
+    await supabase.from('pq_leads').update({ business_notes: noteText } as Record<string, unknown>).eq('id', leadId);
+  };
 
   useEffect(() => {
     async function fetchLeads() {
@@ -81,13 +124,13 @@ export default function LeadsPage() {
       // Merge: my leased leads (fully unlocked) + available leads (locked unless purchased)
       const myLeadIds = new Set((myLeads ?? []).map((l: Lead) => l.id));
       const merged: Lead[] = [
-        ...(myLeads ?? []).map((l: Lead) => ({ ...l, _purchased: true, _status: 'New' })),
+        ...(myLeads ?? []).map((l: Lead) => ({ ...l, _purchased: true, _status: l.status || 'New' })),
         ...(availableLeads ?? [])
           .filter((l: Lead) => !myLeadIds.has(l.id))
           .map((l: Lead) => ({
             ...l,
             _purchased: purchasedIds.has(l.id),
-            _status: 'New',
+            _status: l.status || 'New',
           })),
       ];
 
@@ -97,6 +140,19 @@ export default function LeadsPage() {
 
     fetchLeads();
   }, []);
+
+  // Pre-populate notes and statuses from DB data on first load
+  useEffect(() => {
+    const initialNotes: Record<string, string> = {};
+    const initialStatuses: Record<string, string> = {};
+    leads.forEach(l => {
+      if (l.business_notes) initialNotes[l.id] = l.business_notes;
+      if (l.status) initialStatuses[l.id] = l.status;
+    });
+    setNotes(prev => ({ ...initialNotes, ...prev }));
+    setStatuses(prev => ({ ...initialStatuses, ...prev }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leads]);
 
   const filtered = leads.filter(l => {
     const status = statuses[l.id] ?? l._status ?? 'New';
@@ -178,7 +234,7 @@ export default function LeadsPage() {
                     value={currentStatus}
                     onChange={e => {
                       e.stopPropagation();
-                      setStatuses(prev => ({ ...prev, [lead.id]: e.target.value }));
+                      handleStatusChange(lead.id, e.target.value);
                     }}
                     onClick={e => e.stopPropagation()}
                     className="bg-[#1A2342] border border-white/10 text-white rounded-lg px-3 py-1.5 text-xs"
@@ -206,6 +262,7 @@ export default function LeadsPage() {
                       <textarea
                         value={notes[lead.id] ?? ''}
                         onChange={e => setNotes(prev => ({ ...prev, [lead.id]: e.target.value }))}
+                        onBlur={e => handleNotesSave(lead.id, e.target.value)}
                         placeholder="Add notes..."
                         className="w-full bg-[#1A2342] border border-white/10 text-white rounded-xl px-4 py-3 text-sm resize-none h-20 placeholder-slate-600 focus:outline-none focus:border-[#2563EB]/40"
                       />
@@ -257,8 +314,12 @@ export default function LeadsPage() {
                         <div className="bg-[#1A2342] border border-white/[0.08] rounded-xl p-5 text-center">
                           <p className="text-sm text-slate-400 mb-1">Contact info locked</p>
                           <p className="text-xs text-slate-600 mb-4">Purchase this lead to unlock phone and email</p>
-                          <button className="w-full text-xs font-bold bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-4 py-2.5 rounded-lg transition-colors">
-                            Unlock Lead — $85
+                          <button
+                            onClick={e => { e.stopPropagation(); handlePurchaseLead(lead); }}
+                            disabled={loadingLeadId === lead.id}
+                            className="w-full text-xs font-bold bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-60 text-white px-4 py-2.5 rounded-lg transition-colors"
+                          >
+                            {loadingLeadId === lead.id ? 'Redirecting...' : `Unlock Lead — $${lead.lead_price ?? 85}`}
                           </button>
                         </div>
                       )}

@@ -1,46 +1,110 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/client';
 
-const LEASES = [
-  {
-    niche: 'Roofing',
-    city: 'Austin',
-    state: 'TX',
-    cost: 2400,
-    nextBilling: 'June 1, 2026',
-    leadsThisMonth: 34,
-    leadsLastMonth: 28,
-    status: 'Active',
-    startDate: 'March 1, 2026',
-  },
-  {
-    niche: 'HVAC',
-    city: 'Phoenix',
-    state: 'AZ',
-    cost: 1800,
-    nextBilling: 'June 3, 2026',
-    leadsThisMonth: 31,
-    leadsLastMonth: 30,
-    status: 'Active',
-    startDate: 'March 3, 2026',
-  },
-  {
-    niche: 'Solar',
-    city: 'Denver',
-    state: 'CO',
-    cost: 2600,
-    nextBilling: 'June 8, 2026',
-    leadsThisMonth: 19,
-    leadsLastMonth: 22,
-    status: 'Active',
-    startDate: 'April 8, 2026',
-  },
-];
+interface Lease {
+  id: string;
+  niche: string;
+  city: string;
+  state: string;
+  monthly_cost: number;
+  status: string;
+  stripe_subscription_id: string | null;
+  started_at: string | null;
+  next_billing_at: string | null;
+  cancel_at_period_end: boolean | null;
+}
+
+function formatDate(iso: string | null) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+
+function SuccessBanner() {
+  const searchParams = useSearchParams();
+  const success = searchParams.get('success');
+  const successNiche = searchParams.get('niche');
+  const successCity = searchParams.get('city');
+
+  if (!success) return null;
+
+  return (
+    <div className="mb-6 p-4 bg-green-500/10 border border-green-500/30 rounded-xl text-green-400">
+      🎉 Lease activated! You now own <strong>{successNiche} leads in {successCity}</strong> exclusively.
+      All new leads from this market will come directly to you.
+    </div>
+  );
+}
 
 export default function LeasesPage() {
+  const [leases, setLeases] = useState<Lease[]>([]);
+  const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState<string | null>(null);
+  const [showCancelModal, setShowCancelModal] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchLeases() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoading(false); return; }
+
+      const { data: business } = await supabase
+        .from('pq_businesses')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!business) { setLoading(false); return; }
+
+      const { data } = await supabase
+        .from('pq_market_leases')
+        .select('id, niche, city, state, monthly_cost, status, stripe_subscription_id, started_at, next_billing_at, cancel_at_period_end')
+        .eq('business_id', business.id)
+        .order('created_at', { ascending: false });
+
+      setLeases(data ?? []);
+      setLoading(false);
+    }
+
+    fetchLeases();
+  }, []);
+
+  const handleCancelLease = async (leaseId: string, stripeSubscriptionId: string | null) => {
+    setCancelling(leaseId);
+    try {
+      const res = await fetch('/api/stripe/cancel-lease', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leaseId, subscriptionId: stripeSubscriptionId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setLeases(prev => prev.map(l =>
+          l.id === leaseId ? { ...l, status: 'cancelling', cancel_at_period_end: true } : l
+        ));
+        setShowCancelModal(null);
+        alert('Lease cancellation scheduled. You will retain access until the end of the billing period.');
+      } else {
+        alert(data.error || 'Failed to cancel. Please contact support.');
+      }
+    } catch {
+      alert('Failed to cancel. Please contact support.');
+    } finally {
+      setCancelling(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="p-8">
+        <h1 className="text-2xl font-bold text-white mb-4">My Leases</h1>
+        <p className="text-slate-500">Loading leases...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8">
@@ -54,7 +118,11 @@ export default function LeasesPage() {
         </Link>
       </div>
 
-      {LEASES.length === 0 ? (
+      <Suspense fallback={null}>
+        <SuccessBanner />
+      </Suspense>
+
+      {leases.length === 0 ? (
         <div className="bg-[#0F1729] border border-white/[0.08] rounded-2xl p-16 text-center">
           <p className="text-slate-400 mb-6">You don&apos;t have any active leases.</p>
           <Link
@@ -66,22 +134,30 @@ export default function LeasesPage() {
         </div>
       ) : (
         <div className="space-y-6">
-          {LEASES.map(lease => {
-            const trend = lease.leadsThisMonth - lease.leadsLastMonth;
-            const trendUp = trend >= 0;
-            const key = `${lease.niche}-${lease.city}`;
+          {leases.map(lease => {
+            const isCancelling = lease.cancel_at_period_end || lease.status === 'cancelling';
+            const isActive = lease.status === 'active' || lease.status === 'Active';
 
             return (
-              <div key={key} className="bg-[#0F1729] border border-white/[0.08] rounded-2xl p-8">
+              <div key={lease.id} className="bg-[#0F1729] border border-white/[0.08] rounded-2xl p-8">
                 <div className="flex items-start justify-between mb-6">
                   <div>
                     <div className="flex items-center gap-3 mb-1">
                       <h2 className="text-xl font-bold text-white">{lease.niche} — {lease.city}, {lease.state}</h2>
-                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        Active
+                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${
+                        isCancelling
+                          ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                          : isActive
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                          : 'bg-slate-500/10 text-slate-400 border-slate-500/20'
+                      }`}>
+                        {isCancelling ? 'Cancelling' : isActive ? 'Active' : lease.status}
                       </span>
                     </div>
-                    <p className="text-sm text-slate-500">Leased since {lease.startDate}</p>
+                    <p className="text-sm text-slate-500">Leased since {formatDate(lease.started_at)}</p>
+                    {isCancelling && (
+                      <p className="text-xs text-amber-400/70 mt-1">Access continues until {formatDate(lease.next_billing_at)}</p>
+                    )}
                   </div>
                   <div className="flex items-center gap-3">
                     <Link
@@ -90,54 +166,48 @@ export default function LeasesPage() {
                     >
                       Analytics
                     </Link>
-                    {cancelling === key ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-slate-400">Cancel this lease?</span>
+                    {!isCancelling && (
+                      showCancelModal === lease.id ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-slate-400">Cancel this lease?</span>
+                          <button
+                            onClick={() => handleCancelLease(lease.id, lease.stripe_subscription_id)}
+                            disabled={cancelling === lease.id}
+                            className="text-sm font-semibold text-[#EF4444] hover:text-white disabled:opacity-50 transition-colors px-3 py-2"
+                          >
+                            {cancelling === lease.id ? 'Cancelling...' : 'Yes, cancel'}
+                          </button>
+                          <button
+                            onClick={() => setShowCancelModal(null)}
+                            className="text-sm font-medium text-slate-500 hover:text-white transition-colors"
+                          >
+                            Never mind
+                          </button>
+                        </div>
+                      ) : (
                         <button
-                          onClick={() => setCancelling(null)}
-                          className="text-sm font-semibold text-[#EF4444] hover:text-white transition-colors px-3 py-2"
+                          onClick={() => setShowCancelModal(lease.id)}
+                          className="text-sm font-medium text-slate-600 hover:text-[#EF4444] transition-colors"
                         >
-                          Yes, cancel
+                          Cancel
                         </button>
-                        <button
-                          onClick={() => setCancelling(null)}
-                          className="text-sm font-medium text-slate-500 hover:text-white transition-colors"
-                        >
-                          Never mind
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setCancelling(key)}
-                        className="text-sm font-medium text-slate-600 hover:text-[#EF4444] transition-colors"
-                      >
-                        Cancel
-                      </button>
+                      )
                     )}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">Leads this month</p>
-                    <div className="flex items-baseline gap-2">
-                      <p className="text-3xl font-bold text-white">{lease.leadsThisMonth}</p>
-                      <span className={`text-sm font-semibold ${trendUp ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
-                        {trendUp ? '+' : ''}{trend} vs last mo
-                      </span>
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">Last month</p>
-                    <p className="text-3xl font-bold text-white">{lease.leadsLastMonth}</p>
-                  </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                   <div>
                     <p className="text-xs text-slate-500 mb-1">Monthly cost</p>
-                    <p className="text-3xl font-bold text-white">${lease.cost.toLocaleString()}</p>
+                    <p className="text-3xl font-bold text-white">${(lease.monthly_cost ?? 0).toLocaleString()}</p>
                   </div>
                   <div>
                     <p className="text-xs text-slate-500 mb-1">Next renewal</p>
-                    <p className="text-lg font-semibold text-white">{lease.nextBilling}</p>
+                    <p className="text-lg font-semibold text-white">{formatDate(lease.next_billing_at)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">Stripe subscription</p>
+                    <p className="text-sm text-slate-400 font-mono truncate">{lease.stripe_subscription_id ?? '—'}</p>
                   </div>
                 </div>
               </div>
