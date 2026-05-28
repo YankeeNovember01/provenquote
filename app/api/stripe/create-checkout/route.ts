@@ -45,6 +45,34 @@ export async function POST(request: Request) {
         .eq('id', business.id);
     }
 
+    if (type === 'pro_subscription') {
+      // Pro plan subscription — $29/mo base plan
+      const proPrice = await stripe.prices.create({
+        unit_amount: 2900, // $29.00
+        currency: 'usd',
+        recurring: { interval: 'month' },
+        product_data: {
+          name: 'ProvenQuote Pro — Monthly',
+          metadata: { type: 'pro_plan' },
+        },
+      });
+
+      const session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        payment_method_types: ['card'],
+        line_items: [{ price: proPrice.id, quantity: 1 }],
+        mode: 'subscription',
+        success_url: `${siteUrl}/dashboard?upgraded=1`,
+        cancel_url: `${siteUrl}/dashboard/upgrade?canceled=1`,
+        metadata: {
+          type: 'pro_subscription',
+          business_id: business.id,
+        },
+      });
+
+      return NextResponse.json({ url: session.url });
+    }
+
     if (type === 'lease') {
       // Market lease — recurring subscription
       // Create a price on the fly or use the default price

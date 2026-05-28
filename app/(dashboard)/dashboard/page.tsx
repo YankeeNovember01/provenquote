@@ -48,6 +48,7 @@ export default async function DashboardPage() {
 
   const newLeads = leads.filter(l => l.status === 'new');
   const monthlySpend = (leases ?? []).reduce((sum: number, l: any) => sum + (l.monthly_cost ?? 0), 0);
+  const isPro = business.subscription_status === 'active' || business.subscription_status === 'trialing';
 
   return (
     <DashboardHomeClient
@@ -56,6 +57,7 @@ export default async function DashboardPage() {
       leads={leads}
       newLeads={newLeads}
       monthlySpend={monthlySpend}
+      isPro={isPro}
     />
   );
 }

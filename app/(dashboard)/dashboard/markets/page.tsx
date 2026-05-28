@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { NICHES } from '@/lib/niches';
 import { createClient } from '@/lib/supabase/client';
 
@@ -295,12 +296,12 @@ export default function DashboardMarketsPage() {
                               {isLeasing ? 'Redirecting...' : 'Lease Now'}
                             </button>
                           ) : (
-                            <a
-                              href="/dashboard/billing"
+                            <Link
+                              href="/dashboard/upgrade"
                               className="text-xs font-semibold text-amber-400 hover:text-amber-300 transition-colors whitespace-nowrap flex items-center gap-1"
                             >
-                              🔒 Pro required
-                            </a>
+                              🔒 Upgrade to Pro
+                            </Link>
                           )}
                         </td>
                       </tr>
