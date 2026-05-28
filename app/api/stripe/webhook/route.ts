@@ -115,15 +115,42 @@ export async function POST(request: Request) {
     case 'customer.subscription.deleted': {
       const subscription = event.data.object as Stripe.Subscription;
 
+      // Fetch the lease so we can release associated leads
+      const { data: expiredLease } = await supabase
+        .from('pq_market_leases')
+        .select('niche, city, state')
+        .eq('stripe_subscription_id', subscription.id)
+        .single();
+
       await supabase
         .from('pq_market_leases')
-        .update({ status: 'cancelled' })
+        .update({ status: 'expired' })
         .eq('stripe_subscription_id', subscription.id);
 
       await supabase
         .from('pq_businesses')
         .update({ subscription_status: 'cancelled' })
         .eq('stripe_subscription_id', subscription.id);
+
+      // Release exclusivity on leads for this market
+      if (expiredLease) {
+        await supabase
+          .from('pq_leads')
+          .update({ is_exclusive: false, tenant_id: null })
+          .eq('niche', expiredLease.niche)
+          .eq('city', expiredLease.city)
+          .eq('state', expiredLease.state)
+          .is('tenant_id', null); // only remove exclusivity, not purchased leads
+
+        // Also clear tenant_id on exclusively-assigned leads with no purchase record
+        await supabase
+          .from('pq_leads')
+          .update({ is_exclusive: false, tenant_id: null })
+          .eq('niche', expiredLease.niche)
+          .eq('city', expiredLease.city)
+          .eq('state', expiredLease.state)
+          .not('tenant_id', 'is', null);
+      }
       break;
     }
 

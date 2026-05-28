@@ -1,80 +1,116 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
 
-// Leads that came in from your leased markets on provenquote.com
-const LEADS = [
-  {
-    id: 1,
-    date: 'May 19, 2026',
-    name: 'James Carter',
-    city: 'Austin, TX',
-    service: 'Full Roof Replacement',
-    description: 'Major hail storm last week. Insurance adjuster already visited and confirmed coverage. Need full replacement ASAP.',
-    phone: '(512) 555-0198',
-    email: 'jcarter@email.com',
-    status: 'New',
-    purchased: true,
-  },
-  {
-    id: 2,
-    date: 'May 19, 2026',
-    name: 'Maria Santos',
-    city: 'Austin, TX',
-    service: 'Hail Damage Repair',
-    description: 'Storm damage to several shingles, possible leak forming. Want inspection and estimate. Insurance not yet filed.',
-    phone: '(512) 555-0134',
-    email: 'msantos@gmail.com',
-    status: 'New',
-    purchased: true,
-  },
-  {
-    id: 3,
-    date: 'May 18, 2026',
-    name: 'Derek Williams',
-    city: 'Austin, TX',
-    service: 'Roof Repair',
-    description: 'Noticed a leak in the master bedroom after the last rain. Looking for inspection and repair quote.',
-    phone: null,
-    email: null,
-    status: 'New',
-    purchased: false,
-  },
-  {
-    id: 4,
-    date: 'May 18, 2026',
-    name: 'Tom Bradley',
-    city: 'Austin, TX',
-    service: 'Full Roof Replacement',
-    description: 'Insurance approved my claim after the May storm. Adjuster gave me $18,500. Looking for bids to get work done by end of month.',
-    phone: '(512) 555-0183',
-    email: 'tombradley@gmail.com',
-    status: 'Contacted',
-    purchased: true,
-  },
-  {
-    id: 5,
-    date: 'May 17, 2026',
-    name: 'Linda Park',
-    city: 'Austin, TX',
-    service: 'Roof Inspection',
-    description: 'Just bought the home and want a full inspection before winter. No known issues.',
-    phone: null,
-    email: null,
-    status: 'New',
-    purchased: false,
-  },
-];
+interface Lead {
+  id: string;
+  created_at: string;
+  first_name: string | null;
+  last_name: string | null;
+  city: string | null;
+  state: string | null;
+  niche: string | null;
+  description: string | null;
+  phone: string | null;
+  email: string | null;
+  tenant_id: string | null;
+  is_exclusive: boolean | null;
+  purchased_by: string[] | null;
+  // UI-only fields
+  _purchased?: boolean;
+  _status?: string;
+}
 
 const STATUSES = ['All', 'New', 'Contacted', 'Won', 'Lost'];
 
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
 export default function LeadsPage() {
   const [filter, setFilter] = useState('All');
-  const [notes, setNotes] = useState<Record<number, string>>({});
-  const [statuses, setStatuses] = useState<Record<number, string>>({});
-  const [expanded, setExpanded] = useState<number | null>(null);
+  const [notes, setNotes] = useState<Record<string, string>>({});
+  const [statuses, setStatuses] = useState<Record<string, string>>({});
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [businessId, setBusinessId] = useState<string | null>(null);
 
-  const filtered = LEADS.filter(l => filter === 'All' || (statuses[l.id] ?? l.status) === filter);
+  useEffect(() => {
+    async function fetchLeads() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoading(false); return; }
+
+      // Get business
+      const { data: business } = await supabase
+        .from('pq_businesses')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!business) { setLoading(false); return; }
+      setBusinessId(business.id);
+
+      // Get leads assigned to me via lease (tenant_id = my business)
+      const { data: myLeads } = await supabase
+        .from('pq_leads')
+        .select('*')
+        .eq('tenant_id', business.id)
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      // Get leads I've purchased individually
+      const { data: purchased } = await supabase
+        .from('pq_lead_purchases')
+        .select('lead_id')
+        .eq('business_id', business.id);
+
+      const purchasedIds = new Set((purchased ?? []).map((p: { lead_id: string }) => p.lead_id));
+
+      // Get leads available for purchase (no active lease, not exclusive)
+      const { data: availableLeads } = await supabase
+        .from('pq_leads')
+        .select('*')
+        .is('tenant_id', null)
+        .neq('is_exclusive', true)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      // Merge: my leased leads (fully unlocked) + available leads (locked unless purchased)
+      const myLeadIds = new Set((myLeads ?? []).map((l: Lead) => l.id));
+      const merged: Lead[] = [
+        ...(myLeads ?? []).map((l: Lead) => ({ ...l, _purchased: true, _status: 'New' })),
+        ...(availableLeads ?? [])
+          .filter((l: Lead) => !myLeadIds.has(l.id))
+          .map((l: Lead) => ({
+            ...l,
+            _purchased: purchasedIds.has(l.id),
+            _status: 'New',
+          })),
+      ];
+
+      setLeads(merged);
+      setLoading(false);
+    }
+
+    fetchLeads();
+  }, []);
+
+  const filtered = leads.filter(l => {
+    const status = statuses[l.id] ?? l._status ?? 'New';
+    return filter === 'All' || status === filter;
+  });
+
+  if (loading) {
+    return (
+      <div className="p-8">
+        <h1 className="text-2xl font-bold text-white mb-4">Leads</h1>
+        <p className="text-slate-500">Loading leads...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8">
@@ -107,8 +143,11 @@ export default function LeadsPage() {
       {/* Lead list */}
       <div className="space-y-3">
         {filtered.map(lead => {
-          const currentStatus = statuses[lead.id] ?? lead.status;
+          const name = [lead.first_name, lead.last_name].filter(Boolean).join(' ') || 'Anonymous';
+          const location = [lead.city, lead.state].filter(Boolean).join(', ') || '—';
+          const currentStatus = statuses[lead.id] ?? lead._status ?? 'New';
           const isExpanded = expanded === lead.id;
+          const isPurchased = lead._purchased;
 
           return (
             <div
@@ -124,15 +163,15 @@ export default function LeadsPage() {
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3">
-                    <p className="text-sm font-semibold text-white">{lead.name}</p>
-                    <span className="text-xs text-slate-500">{lead.city}</span>
-                    <span className="text-xs text-slate-600">{lead.date}</span>
+                    <p className="text-sm font-semibold text-white">{name}</p>
+                    <span className="text-xs text-slate-500">{location}</span>
+                    <span className="text-xs text-slate-600">{formatDate(lead.created_at)}</span>
                   </div>
-                  <p className="text-xs text-slate-400 mt-0.5">{lead.service}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">{lead.niche || 'General'}</p>
                 </div>
 
                 <div className="flex items-center gap-3">
-                  {!lead.purchased && (
+                  {!isPurchased && (
                     <span className="text-xs text-slate-500 italic">Contact locked</span>
                   )}
                   <select
@@ -159,7 +198,9 @@ export default function LeadsPage() {
                     {/* Left: description + notes */}
                     <div>
                       <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">What they need</h4>
-                      <p className="text-sm text-slate-300 leading-relaxed mb-5">{lead.description}</p>
+                      <p className="text-sm text-slate-300 leading-relaxed mb-5">
+                        {lead.description || 'No description provided.'}
+                      </p>
 
                       <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Your notes</h4>
                       <textarea
@@ -173,30 +214,44 @@ export default function LeadsPage() {
                     {/* Right: contact */}
                     <div>
                       <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Contact</h4>
-                      {lead.purchased ? (
+                      {isPurchased ? (
                         <div className="space-y-3">
                           <div>
                             <p className="text-xs text-slate-600 mb-1">Phone</p>
-                            <a href={`tel:${lead.phone}`} className="text-sm font-medium text-[#2563EB]">{lead.phone}</a>
+                            {lead.phone ? (
+                              <a href={`tel:${lead.phone}`} className="text-sm font-medium text-[#2563EB]">{lead.phone}</a>
+                            ) : (
+                              <span className="text-sm text-slate-500">Not provided</span>
+                            )}
                           </div>
                           <div>
                             <p className="text-xs text-slate-600 mb-1">Email</p>
-                            <a href={`mailto:${lead.email}`} className="text-sm text-[#2563EB]">{lead.email}</a>
+                            {lead.email ? (
+                              <a href={`mailto:${lead.email}`} className="text-sm text-[#2563EB]">{lead.email}</a>
+                            ) : (
+                              <span className="text-sm text-slate-500">Not provided</span>
+                            )}
                           </div>
-                          <div className="mt-4 flex gap-2">
-                            <a
-                              href={`tel:${lead.phone}`}
-                              className="flex-1 text-center text-xs font-semibold bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-3 py-2.5 rounded-xl transition-colors"
-                            >
-                              Call Now
-                            </a>
-                            <a
-                              href={`mailto:${lead.email}`}
-                              className="flex-1 text-center text-xs font-medium bg-white/5 hover:bg-white/10 border border-white/10 text-white px-3 py-2.5 rounded-xl transition-colors"
-                            >
-                              Send Email
-                            </a>
-                          </div>
+                          {(lead.phone || lead.email) && (
+                            <div className="mt-4 flex gap-2">
+                              {lead.phone && (
+                                <a
+                                  href={`tel:${lead.phone}`}
+                                  className="flex-1 text-center text-xs font-semibold bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-3 py-2.5 rounded-xl transition-colors"
+                                >
+                                  Call Now
+                                </a>
+                              )}
+                              {lead.email && (
+                                <a
+                                  href={`mailto:${lead.email}`}
+                                  className="flex-1 text-center text-xs font-medium bg-white/5 hover:bg-white/10 border border-white/10 text-white px-3 py-2.5 rounded-xl transition-colors"
+                                >
+                                  Send Email
+                                </a>
+                              )}
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <div className="bg-[#1A2342] border border-white/[0.08] rounded-xl p-5 text-center">
@@ -218,7 +273,14 @@ export default function LeadsPage() {
 
       {filtered.length === 0 && (
         <div className="bg-[#0F1729] border border-white/[0.08] rounded-2xl p-16 text-center">
-          <p className="text-slate-500">No leads in this status.</p>
+          {leads.length === 0 ? (
+            <>
+              <p className="text-slate-400 mb-2">No leads yet.</p>
+              <p className="text-slate-600 text-sm">Lease a market to start receiving exclusive leads.</p>
+            </>
+          ) : (
+            <p className="text-slate-500">No leads in this status.</p>
+          )}
         </div>
       )}
     </div>

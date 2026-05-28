@@ -79,6 +79,38 @@ export async function POST(request: Request) {
     }
 
     if (type === 'lead') {
+      // Enforce exclusivity: block purchase if market is actively leased
+      const { data: lead } = await supabase
+        .from('pq_leads')
+        .select('niche, city, state, tenant_id, is_exclusive')
+        .eq('id', leadId)
+        .single();
+
+      if (lead?.tenant_id || lead?.is_exclusive) {
+        return NextResponse.json(
+          { error: 'This lead is exclusively assigned to a market leaseholder.' },
+          { status: 403 }
+        );
+      }
+
+      if (lead) {
+        const { data: activeLease } = await supabase
+          .from('pq_market_leases')
+          .select('id, business_id')
+          .eq('niche', lead.niche)
+          .eq('city', lead.city)
+          .eq('state', lead.state)
+          .eq('status', 'active')
+          .maybeSingle();
+
+        if (activeLease) {
+          return NextResponse.json(
+            { error: 'This market is exclusively leased. Leads are not available for individual purchase.' },
+            { status: 403 }
+          );
+        }
+      }
+
       // Pay-per-lead — one-time payment
       const session = await stripe.checkout.sessions.create({
         customer: customerId,
