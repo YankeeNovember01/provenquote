@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import AIAssistant from '@/components/AIAssistant';
 import { usePathname } from 'next/navigation';
 
 const NAV = [
@@ -78,6 +79,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="ml-56 flex-1 min-h-screen">
         {children}
       </div>
+      <AIAssistant />
     </div>
   );
 }

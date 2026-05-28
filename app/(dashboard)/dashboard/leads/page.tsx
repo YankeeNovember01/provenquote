@@ -40,6 +40,26 @@ export default function LeadsPage() {
   const [loading, setLoading] = useState(true);
   const [businessId, setBusinessId] = useState<string | null>(null);
   const [loadingLeadId, setLoadingLeadId] = useState<string | null>(null);
+  const [writingBidFor, setWritingBidFor] = useState<string | null>(null);
+  const [bidDraft, setBidDraft] = useState<{ leadId: string; text: string } | null>(null);
+
+  const handleWriteBid = async (leadId: string) => {
+    setWritingBidFor(leadId);
+    try {
+      const res = await fetch('/api/ai/bid-writer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leadId }),
+      });
+      const { proposal, error } = await res.json();
+      if (error) throw new Error(error);
+      setBidDraft({ leadId, text: proposal });
+    } catch {
+      alert('Failed to generate bid. Try again.');
+    } finally {
+      setWritingBidFor(null);
+    }
+  };
 
   const handlePurchaseLead = async (lead: Lead) => {
     setLoadingLeadId(lead.id);
@@ -309,6 +329,38 @@ export default function LeadsPage() {
                               )}
                             </div>
                           )}
+                          {/* AI Bid Writer */}
+                          <div className="mt-4">
+                            <button
+                              onClick={e => { e.stopPropagation(); handleWriteBid(lead.id); }}
+                              disabled={writingBidFor === lead.id}
+                              className="w-full text-xs font-medium bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 hover:text-blue-300 px-3 py-2 rounded-lg transition-all disabled:opacity-50"
+                            >
+                              {writingBidFor === lead.id ? '✨ Writing bid...' : '✨ Write Bid Proposal'}
+                            </button>
+                            {bidDraft?.leadId === lead.id && (
+                              <div className="mt-3 bg-[#0A1020] border border-white/[0.06] rounded-xl p-4">
+                                <div className="flex items-center justify-between mb-2">
+                                  <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Generated Bid Proposal</p>
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(bidDraft.text); }}
+                                      className="text-[10px] text-blue-400 hover:text-blue-300 transition"
+                                    >
+                                      Copy
+                                    </button>
+                                    <button
+                                      onClick={e => { e.stopPropagation(); setBidDraft(null); }}
+                                      className="text-[10px] text-slate-600 hover:text-slate-400 transition"
+                                    >
+                                      Dismiss
+                                    </button>
+                                  </div>
+                                </div>
+                                <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">{bidDraft.text}</p>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       ) : (
                         <div className="bg-[#1A2342] border border-white/[0.08] rounded-xl p-5 text-center">
