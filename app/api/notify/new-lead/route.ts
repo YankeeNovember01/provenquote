@@ -25,11 +25,11 @@ function buildLeadNotificationEmail({
         <span style="background: ${urgencyColor}; color: white; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.05em;">${urgency}</span>
       </div>
       <div style="background: #f8fafc; padding: 32px; border-radius: 0 0 12px 12px; border: 1px solid #e2e8f0;">
-        <h2 style="color: #1e293b; margin-top: 0;">🔔 New Lead in ${lead.city}, ${lead.state}</h2>
+        <h2 style="color: #1e293b; margin-top: 0;">New Lead in ${lead.city}, ${lead.state}</h2>
         <p style="color: #475569;">Hi <strong>${businessName}</strong>, a new <strong>${urgency}</strong> lead just came in for your <strong>${lead.niche}</strong> market.</p>
 
         ${scoreLabel ? `<div style="background: #dbeafe; border: 1px solid #93c5fd; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px;">
-          <p style="margin: 0; color: #1e40af; font-weight: 600; font-size: 15px;">💰 ${scoreLabel}</p>
+          <p style="margin: 0; color: #1e40af; font-weight: 600; font-size: 15px;">${scoreLabel}</p>
         </div>` : ''}
 
         <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
@@ -48,7 +48,7 @@ function buildLeadNotificationEmail({
         </div>
 
         <div style="background: #fef9c3; border: 1px solid #fde047; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px;">
-          <p style="margin: 0; color: #713f12; font-size: 13px;">⚡ Act fast — homeowners contact multiple contractors. First to respond wins the job.</p>
+          <p style="margin: 0; color: #713f12; font-size: 13px;">Act fast — homeowners contact multiple contractors. First to respond wins the job.</p>
         </div>
 
         <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
@@ -154,7 +154,7 @@ export async function POST(request: Request) {
               body: JSON.stringify({
                 from: 'ProvenQuote.ai <noreply@provenquote.ai>',
                 to: [contractor.email],
-                subject: `🔔 New ${lead.urgency ?? ''} Lead — ${lead.niche} in ${lead.city}, ${lead.state}`,
+                subject: `New ${lead.urgency ?? ''} Lead — ${lead.niche} in ${lead.city}, ${lead.state}`,
                 html: buildLeadNotificationEmail({
                   businessName: contractor.business_name,
                   lead,

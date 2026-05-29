@@ -36,27 +36,23 @@ interface Props {
 
 // ─── Business Type Config ───────────────────────────────────────────────────
 
-const BUSINESS_TYPE_META: Record<string, { emoji: string; label: string; servicesLabel: string; bioPlaceholder: string }> = {
+const BUSINESS_TYPE_META: Record<string, { label: string; servicesLabel: string; bioPlaceholder: string }> = {
   home_service: {
-    emoji: '🔨',
     label: 'Home Service & Trades',
     servicesLabel: 'Services Offered',
     bioPlaceholder: 'Tell homeowners what makes your business the best choice…',
   },
   professional: {
-    emoji: '⚖️',
     label: 'Professional Services',
     servicesLabel: 'Practice Areas',
     bioPlaceholder: 'Tell clients what makes your firm the best choice…',
   },
   health: {
-    emoji: '🏥',
     label: 'Health & Wellness',
     servicesLabel: 'Specialties',
     bioPlaceholder: 'Tell patients what makes your practice stand out…',
   },
   other: {
-    emoji: '🏪',
     label: 'Other Business',
     servicesLabel: 'Service Specialties',
     bioPlaceholder: 'Tell clients what makes your business stand out…',
@@ -165,7 +161,6 @@ export default function ProfileClient({ initialBusiness, userId }: Props) {
           {/* Business type badge */}
           {businessType && BUSINESS_TYPE_META[businessType] && (
             <span className="inline-flex items-center gap-1.5 mt-1 text-xs font-medium text-slate-400 bg-white/5 border border-white/[0.08] rounded-full px-3 py-1">
-              <span>{meta.emoji}</span>
               {meta.label}
             </span>
           )}
@@ -181,6 +176,25 @@ export default function ProfileClient({ initialBusiness, userId }: Props) {
           </a>
         )}
       </div>
+
+      {/* Public profile banner */}
+      {publicProfileUrl && (
+        <div className="mb-6 bg-[#0F1729] border border-white/[0.08] rounded-2xl p-5 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold text-white mb-1">Your Public Business Profile</p>
+            <p className="text-xs text-slate-500 mb-2">This is what homeowners see when they find your business on ProvenQuote.</p>
+            <p className="text-xs text-slate-400 font-mono break-all">{publicProfileUrl}</p>
+          </div>
+          <a
+            href={publicProfileUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 text-sm font-semibold bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-4 py-2.5 rounded-lg transition-colors"
+          >
+            View live page →
+          </a>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-1 mb-6 bg-[#0F1729] border border-white/[0.08] rounded-xl p-1 w-fit">
@@ -211,7 +225,7 @@ export default function ProfileClient({ initialBusiness, userId }: Props) {
               )}
               {saved && (
                 <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 text-sm">
-                  ✓ Profile saved successfully
+                  Profile saved successfully
                 </div>
               )}
 
@@ -380,7 +394,7 @@ export default function ProfileClient({ initialBusiness, userId }: Props) {
 
               {business?.verified ? (
                 <div className="flex items-center gap-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
-                  <span className="text-xl">✅</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-emerald-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                   <div>
                     <p className="text-sm font-semibold text-emerald-400">Verified Business</p>
                     <p className="text-xs text-slate-400 mt-0.5">Your badge appears on your public profile</p>
@@ -389,7 +403,7 @@ export default function ProfileClient({ initialBusiness, userId }: Props) {
               ) : (
                 <div>
                   <div className="flex items-center gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl mb-4">
-                    <span className="text-xl">🔶</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-amber-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                     <div>
                       <p className="text-sm font-semibold text-amber-400">Not Verified</p>
                       <p className="text-xs text-slate-400 mt-0.5">Get verified to build trust with clients</p>
@@ -399,9 +413,9 @@ export default function ProfileClient({ initialBusiness, userId }: Props) {
                     Verified pros get more clicks and higher lead quality scores. We verify:
                   </p>
                   <ul className="text-xs text-slate-500 space-y-1 mb-4">
-                    <li>✓ Business license</li>
-                    <li>✓ Insurance or credentials</li>
-                    <li>✓ Phone number</li>
+                    <li>Business license</li>
+                    <li>Insurance or credentials</li>
+                    <li>Phone number</li>
                   </ul>
                   <a
                     href="mailto:verify@provenquote.ai?subject=Verification Request"

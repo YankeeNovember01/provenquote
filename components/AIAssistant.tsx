@@ -86,7 +86,7 @@ export default function AIAssistant({ context }: Props) {
           className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-[#2563EB] hover:bg-blue-700 rounded-full shadow-lg flex items-center justify-center text-white text-xl transition-all hover:scale-105"
           title="AI Business Advisor"
         >
-          ✨
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM12 8v4M12 16h.01"/></svg>
         </button>
       )}
 
@@ -96,7 +96,7 @@ export default function AIAssistant({ context }: Props) {
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.08] bg-[#0F1729]">
             <div className="flex items-center gap-2">
-              <span className="text-lg">✨</span>
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
               <div>
                 <p className="text-sm font-semibold text-white">AI Business Advisor</p>
                 <p className="text-[10px] text-slate-500">Powered by Claude · Haiku</p>

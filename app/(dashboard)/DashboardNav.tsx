@@ -2,11 +2,16 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import {
+  ShoppingCart, Inbox, Building2, FileText, MessageSquare,
+  User, CreditCard, BarChart2,
+  type LucideIcon,
+} from 'lucide-react';
 
 interface NavItem {
   href: string;
   label: string;
-  icon: string;
+  icon: LucideIcon;
   badge?: number;
   comingSoon?: boolean;
 }
@@ -16,39 +21,26 @@ export default function DashboardNav({ newLeadCount }: { newLeadCount: number })
 
   const NAV_GROUPS: { label: string | null; items: NavItem[] }[] = [
     {
-      label: null,
+      label: 'Acquire Leads',
       items: [
-        { href: '/dashboard', label: 'Home', icon: '◈' },
+        { href: '/dashboard/get-leads', label: 'Get Leads', icon: ShoppingCart },
+        { href: '/dashboard/leads', label: 'My Leads', icon: Inbox, badge: newLeadCount > 0 ? newLeadCount : undefined },
+        { href: '/dashboard/leases', label: 'My Hubs', icon: Building2 },
       ],
     },
     {
-      label: 'Leads & Sales',
+      label: 'Sales',
       items: [
-        { href: '/dashboard/leads', label: 'Lead Inbox', icon: '⬇', badge: newLeadCount > 0 ? newLeadCount : undefined },
-        { href: '/dashboard/messages', label: 'Messages', icon: '💬' },
-        { href: '/dashboard/bids', label: 'Bids & Proposals', icon: '📋' },
+        { href: '/dashboard/proposals', label: 'Bids & Proposals', icon: FileText },
+        { href: '/dashboard/messages', label: 'Messages', icon: MessageSquare },
       ],
     },
     {
-      label: 'Markets',
+      label: 'My Business',
       items: [
-        { href: '/dashboard/leases', label: 'My Leased Hubs', icon: '🏠' },
-        { href: '/dashboard/markets', label: 'Browse Markets', icon: '🗺' },
-        { href: '/dashboard/ads', label: 'Ads Manager', icon: '📣' },
-      ],
-    },
-    {
-      label: 'My Account',
-      items: [
-        { href: '/dashboard/profile', label: 'Business Profile', icon: '🏢' },
-        { href: '/dashboard/billing', label: 'Billing', icon: '💳' },
-        { href: '/dashboard/escrow', label: 'Escrow', icon: '🔒', comingSoon: true },
-      ],
-    },
-    {
-      label: 'Insights',
-      items: [
-        { href: '/dashboard/analytics', label: 'Analytics', icon: '📊' },
+        { href: '/dashboard/profile', label: 'Business Profile', icon: User },
+        { href: '/dashboard/billing', label: 'Billing', icon: CreditCard },
+        { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart2 },
       ],
     },
   ];
@@ -67,7 +59,7 @@ export default function DashboardNav({ newLeadCount }: { newLeadCount: number })
               {group.label}
             </p>
           )}
-          {group.items.map(({ href, label, icon, badge, comingSoon }) => (
+          {group.items.map(({ href, label, icon: Icon, badge, comingSoon }) => (
             <Link
               key={href}
               href={href}
@@ -77,7 +69,7 @@ export default function DashboardNav({ newLeadCount }: { newLeadCount: number })
                   : 'text-slate-400 hover:text-white hover:bg-white/5'
               }`}
             >
-              <span className="text-base leading-none">{icon}</span>
+              <Icon className="w-4 h-4 shrink-0" />
               {label}
               {badge && badge > 0 && (
                 <span className="ml-auto text-[10px] font-bold bg-[#2563EB] text-white rounded-full px-1.5 py-0.5">

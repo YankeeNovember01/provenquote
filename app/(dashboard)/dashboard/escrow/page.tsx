@@ -4,32 +4,26 @@ export const metadata: Metadata = { title: 'Escrow — Coming Soon' };
 
 const FEATURES = [
   {
-    icon: '🔒',
     title: 'Secure Job Deposits',
     desc: 'Homeowners deposit funds upfront into escrow. You get paid when the job is marked complete — no more chasing payments or bounced checks.',
   },
   {
-    icon: '✅',
     title: 'Milestone-Based Releases',
     desc: 'Break large jobs into milestones. Funds release automatically when each phase is confirmed complete by the homeowner.',
   },
   {
-    icon: '🛡️',
     title: 'Dispute Resolution',
     desc: 'If something goes wrong, ProvenQuote mediates. Both parties are protected with a clear paper trail from day one.',
   },
   {
-    icon: '⚡',
     title: 'Instant Transfers',
     desc: 'Once a job is complete and confirmed, funds transfer to your bank within 1–2 business days. No delays, no holds.',
   },
   {
-    icon: '📄',
     title: 'Built-in Contracts',
     desc: 'Generate a simple digital contract for each job right in the platform. No lawyers, no paperwork, just click and sign.',
   },
   {
-    icon: '💰',
     title: 'No Surprise Fees',
     desc: 'Flat 1.5% escrow fee, deducted only on successful job completion. No monthly fees, no setup fees.',
   },
@@ -57,8 +51,8 @@ export default function EscrowPage() {
       <div className="bg-gradient-to-br from-[#1A2342] to-[#0F1729] border border-[#2563EB]/20 rounded-3xl p-10 mb-10 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-[#2563EB]/5 rounded-full blur-3xl pointer-events-none" />
         <div className="relative">
-          <div className="w-16 h-16 bg-[#2563EB]/10 border border-[#2563EB]/20 rounded-2xl flex items-center justify-center text-3xl mb-6">
-            🔒
+          <div className="w-16 h-16 bg-[#2563EB]/10 border border-[#2563EB]/20 rounded-2xl flex items-center justify-center mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-[#2563EB]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
           </div>
           <h2 className="text-xl font-bold text-white mb-3">
             Jobs paid on completion. Both sides protected.
@@ -68,15 +62,15 @@ export default function EscrowPage() {
           </p>
           <div className="flex flex-wrap gap-4 text-sm">
             <div className="flex items-center gap-2 text-slate-400">
-              <span className="text-emerald-400">✓</span>
+              <span className="text-emerald-400">&#10003;</span>
               No more chasing payments
             </div>
             <div className="flex items-center gap-2 text-slate-400">
-              <span className="text-emerald-400">✓</span>
+              <span className="text-emerald-400">&#10003;</span>
               Dispute protection built in
             </div>
             <div className="flex items-center gap-2 text-slate-400">
-              <span className="text-emerald-400">✓</span>
+              <span className="text-emerald-400">&#10003;</span>
               Only 1.5% fee on completion
             </div>
           </div>
@@ -86,9 +80,9 @@ export default function EscrowPage() {
       {/* Feature grid */}
       <h2 className="text-base font-bold text-white mb-6">What&apos;s included</h2>
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
-        {FEATURES.map(({ icon, title, desc }) => (
+        {FEATURES.map(({ title, desc }) => (
           <div key={title} className="bg-[#0F1729] border border-white/[0.08] rounded-2xl p-6">
-            <div className="text-2xl mb-4">{icon}</div>
+            <div className="w-2 h-2 rounded-full bg-[#2563EB] mb-4" />
             <h3 className="text-sm font-bold text-white mb-2">{title}</h3>
             <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
           </div>

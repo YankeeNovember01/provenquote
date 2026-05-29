@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { Lock, Zap, CreditCard } from 'lucide-react';
 
 const FREE_FEATURES = [
   { text: 'Browse all available leads', detail: 'See lead cards & expand for details' },
@@ -53,7 +54,7 @@ export default function UpgradePage() {
       {/* Header */}
       <div className="text-center mb-10">
         <div className="inline-flex items-center gap-2 bg-blue-600/10 border border-blue-500/20 rounded-full px-4 py-1.5 text-xs font-semibold text-blue-400 mb-4">
-          ⚡ Upgrade Your Plan
+          Upgrade Your Plan
         </div>
         <h1 className="text-3xl font-bold text-white mb-3">Unlock the full ProvenQuote platform</h1>
         <p className="text-slate-400 text-base max-w-xl mx-auto">
@@ -80,7 +81,7 @@ export default function UpgradePage() {
           <div className="space-y-3">
             {FREE_FEATURES.map((f) => (
               <div key={f.text} className="flex items-start gap-3">
-                <span className="text-emerald-400 text-sm mt-0.5">✓</span>
+                <span className="text-emerald-400 text-sm mt-0.5">&#10003;</span>
                 <div>
                   <p className="text-sm text-white font-medium">{f.text}</p>
                   <p className="text-xs text-slate-500">{f.detail}</p>
@@ -103,7 +104,7 @@ export default function UpgradePage() {
             {PRO_FEATURES.map((f, i) => (
               <div key={f.text} className="flex items-start gap-3">
                 <span className={`text-sm mt-0.5 ${i === 0 ? 'text-slate-400' : 'text-blue-400'}`}>
-                  {i === 0 ? '✓' : '⚡'}
+                  {i === 0 ? String.fromCharCode(10003) : '→'}
                 </span>
                 <div>
                   <p className="text-sm text-white font-medium">{f.text}</p>
@@ -153,10 +154,10 @@ export default function UpgradePage() {
               <tr key={feature} className={`border-b border-white/[0.04] last:border-0 ${i % 2 === 0 ? '' : 'bg-white/[0.02]'}`}>
                 <td className="px-6 py-3.5 text-sm text-slate-300">{feature}</td>
                 <td className="px-6 py-3.5 text-center text-sm">
-                  {free ? <span className="text-emerald-400">✓</span> : <span className="text-slate-600">—</span>}
+                  {free ? <span className="text-emerald-400">&#10003;</span> : <span className="text-slate-600">—</span>}
                 </td>
                 <td className="px-6 py-3.5 text-center text-sm">
-                  {pro ? <span className="text-blue-400">✓</span> : <span className="text-slate-600">—</span>}
+                  {pro ? <span className="text-blue-400">&#10003;</span> : <span className="text-slate-600">—</span>}
                 </td>
               </tr>
             ))}
@@ -167,12 +168,12 @@ export default function UpgradePage() {
       {/* FAQ / trust signals */}
       <div className="grid md:grid-cols-3 gap-4 text-center">
         {[
-          { icon: '🔒', title: 'No lock-in', body: 'Cancel your Pro subscription anytime, no questions asked.' },
-          { icon: '⚡', title: 'Instant access', body: 'Markets, Consumer Intel, and all Pro features unlock immediately.' },
-          { icon: '💳', title: 'Secure payments', body: 'Powered by Stripe. We never store your card details.' },
-        ].map(({ icon, title, body }) => (
+          { icon: Lock, title: 'No lock-in', body: 'Cancel your Pro subscription anytime, no questions asked.' },
+          { icon: Zap, title: 'Instant access', body: 'Markets, Consumer Intel, and all Pro features unlock immediately.' },
+          { icon: CreditCard, title: 'Secure payments', body: 'Powered by Stripe. We never store your card details.' },
+        ].map(({ icon: Icon, title, body }) => (
           <div key={title} className="bg-[#0F1729] border border-white/[0.08] rounded-2xl p-5">
-            <div className="text-2xl mb-2">{icon}</div>
+            <Icon className="w-6 h-6 text-slate-400 mx-auto mb-2" />
             <p className="text-sm font-semibold text-white mb-1">{title}</p>
             <p className="text-xs text-slate-500">{body}</p>
           </div>

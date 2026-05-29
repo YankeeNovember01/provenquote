@@ -40,7 +40,6 @@ export default function DashboardHomeClient({ business, leases, leads, newLeads,
       {/* Welcome banner shown right after first-time setup */}
       {justOnboarded && (
         <div className="mb-6 flex items-center gap-4 bg-[#2563EB]/10 border border-[#2563EB]/20 rounded-2xl px-6 py-4">
-          <span className="text-2xl">🎉</span>
           <div className="flex-1">
             <p className="text-sm font-semibold text-white">You're all set! Welcome to ProvenQuote.</p>
             <p className="text-xs text-slate-400 mt-0.5">Here are leads matching your profile. Lease a market to start receiving them directly.</p>
@@ -184,7 +183,7 @@ export default function DashboardHomeClient({ business, leases, leads, newLeads,
               {/* Overlay */}
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center bg-[#0F1729]/90 px-6 py-4 rounded-2xl border border-blue-500/20">
-                  <p className="text-sm font-semibold text-white mb-1">🔒 Pro Feature</p>
+                  <p className="text-sm font-semibold text-white mb-1">Pro Feature</p>
                   <p className="text-xs text-slate-400 mb-3">Unlock AI-powered close rates, pipeline value, and win analytics.</p>
                   <Link href="/dashboard/upgrade" className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg inline-block transition-colors font-medium">
                     Unlock Insights →

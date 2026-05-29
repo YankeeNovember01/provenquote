@@ -32,6 +32,7 @@ const NAV_SECTIONS = [
     items: [
       { href: '/dashboard/profile',       label: 'My Profile' },
       { href: '/dashboard/billing',       label: 'Billing' },
+      { href: '/dashboard/credits',       label: 'Credits' },
       { href: '/dashboard/escrow',        label: 'Escrow', comingSoon: true },
     ],
   },
@@ -159,7 +160,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Upgrade prompt for Free users */}
         {subscriptionStatus === 'free' && (
           <div className="mx-3 mb-3 p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl">
-            <p className="text-xs font-semibold text-white mb-1">⚡ Upgrade to Pro</p>
+            <p className="text-xs font-semibold text-white mb-1">Upgrade to Pro</p>
             <p className="text-[10px] text-slate-400 mb-2">Lease exclusive markets. Own your city.</p>
             <Link
               href="/dashboard/upgrade"

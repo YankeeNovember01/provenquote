@@ -52,6 +52,20 @@ export async function POST(request: Request) {
           next_billing_at: nextBilling.toISOString(),
         });
 
+        // Assign all existing uncontacted leads for this market to the leasing business
+        await supabase
+          .from('pq_leads')
+          .update({
+            tenant_id: meta.business_id,
+            is_exclusive: true,
+            assigned_at: new Date().toISOString(),
+          })
+          .eq('niche', meta.niche)
+          .eq('city', meta.city)
+          .eq('state', meta.state)
+          .is('tenant_id', null)
+          .not('status', 'in', '("contacted","won","lost","spam")');
+
         // Update business subscription status
         await supabase
           .from('pq_businesses')
@@ -60,6 +74,30 @@ export async function POST(request: Request) {
             subscription_status: 'active',
           })
           .eq('id', meta.business_id);
+      }
+
+      if (meta.type === 'credits') {
+        const businessId = meta.business_id;
+        const creditAmount = parseInt(meta.amount || '0');
+        const bonusAmount = parseInt(meta.bonus_amount || '0');
+
+        // Add credits to the business balance
+        // Use a raw increment to avoid race conditions
+        const { data: bizData } = await supabase
+          .from('pq_businesses')
+          .select('credit_balance, bonus_credit_balance')
+          .eq('id', businessId)
+          .single();
+
+        if (bizData) {
+          await supabase
+            .from('pq_businesses')
+            .update({
+              credit_balance: (bizData.credit_balance ?? 0) + creditAmount,
+              bonus_credit_balance: (bizData.bonus_credit_balance ?? 0) + bonusAmount,
+            })
+            .eq('id', businessId);
+        }
       }
 
       if (meta.type === 'lead') {

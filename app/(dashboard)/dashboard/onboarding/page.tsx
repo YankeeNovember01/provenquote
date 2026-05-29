@@ -18,25 +18,25 @@ interface BusinessTypeOption {
 const BUSINESS_TYPES: BusinessTypeOption[] = [
   {
     key: 'home_service',
-    emoji: '🔨',
+    emoji: '',
     label: 'Home Service & Trades',
     subtitle: 'Roofing, HVAC, Plumbing, Electrical, Landscaping, etc.',
   },
   {
     key: 'professional',
-    emoji: '⚖️',
+    emoji: '',
     label: 'Professional Services',
     subtitle: 'Attorney, Financial Advisor, Insurance Agent, Real Estate, etc.',
   },
   {
     key: 'health',
-    emoji: '🏥',
+    emoji: '',
     label: 'Health & Wellness',
     subtitle: 'Dentist, Chiropractor, Med Spa, Physical Therapy, etc.',
   },
   {
     key: 'other',
-    emoji: '🏪',
+    emoji: '',
     label: 'Other Business',
     subtitle: 'Any other local service business',
   },
@@ -212,7 +212,7 @@ export default function OnboardingPage() {
                 <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all flex-shrink-0 ${
                   step > s ? 'bg-[#2563EB] text-white' : step === s ? 'bg-[#2563EB] text-white ring-2 ring-[#2563EB]/30' : 'bg-white/10 text-slate-500'
                 }`}>
-                  {step > s ? '✓' : s}
+                  {step > s ? String.fromCharCode(10003) : s}
                 </div>
                 {s < 4 && (
                   <div className={`flex-1 h-0.5 ${step > s ? 'bg-[#2563EB]' : 'bg-white/10'}`} />
@@ -242,7 +242,6 @@ export default function OnboardingPage() {
                       : 'border-white/[0.08] hover:border-white/20 bg-[#1A2342]/50'
                   }`}
                 >
-                  <span className="text-2xl mb-2 block">{bt.emoji}</span>
                   <p className="font-semibold text-white text-sm mb-1">{bt.label}</p>
                   <p className="text-xs text-slate-400">{bt.subtitle}</p>
                 </button>
@@ -326,13 +325,12 @@ export default function OnboardingPage() {
                   : 'border-white/[0.08] hover:border-white/20 bg-[#1A2342]/50'
               }`}
             >
-              <span className="text-xl">🌎</span>
               <div>
                 <p className="text-sm font-medium text-white">Nationwide / Remote services</p>
                 <p className="text-xs text-slate-400">I serve customers anywhere in the US</p>
               </div>
               <div className={`ml-auto w-5 h-5 rounded-full border-2 flex items-center justify-center ${nationwide ? 'border-[#2563EB] bg-[#2563EB]' : 'border-white/20'}`}>
-                {nationwide && <span className="text-white text-xs">✓</span>}
+                {nationwide && <span className="text-white text-xs font-bold">&#10003;</span>}
               </div>
             </button>
 

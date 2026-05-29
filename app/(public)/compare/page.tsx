@@ -111,7 +111,7 @@ export default function ComparePage() {
               'You\'re building a real local brand, not just chasing volume',
             ].map((item) => (
               <li key={item} className="flex gap-3">
-                <span className="text-[#10B981] shrink-0">✓</span>
+                <span className="text-[#10B981] shrink-0">&#10003;</span>
                 {item}
               </li>
             ))}

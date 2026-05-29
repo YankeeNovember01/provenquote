@@ -116,7 +116,6 @@ export default function MessagesClient({ conversations: initialConvos, businessI
       <div className="p-8">
         <h1 className="text-2xl font-bold text-white mb-4">Messages</h1>
         <div className="bg-[#0F1729] border border-white/[0.08] rounded-2xl p-12 text-center">
-          <p className="text-2xl mb-3">💬</p>
           <p className="text-slate-400 mb-2">No conversations yet.</p>
           <p className="text-slate-500 text-sm">Messages from homeowners will appear here once you lease a market or purchase leads.</p>
         </div>

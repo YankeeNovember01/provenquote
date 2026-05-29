@@ -300,7 +300,7 @@ export default function DashboardMarketsPage() {
                               href="/dashboard/upgrade"
                               className="text-xs font-semibold text-amber-400 hover:text-amber-300 transition-colors whitespace-nowrap flex items-center gap-1"
                             >
-                              🔒 Upgrade to Pro
+                              Upgrade to Pro
                             </Link>
                           )}
                         </td>

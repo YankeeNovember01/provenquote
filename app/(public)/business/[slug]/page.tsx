@@ -2,6 +2,7 @@ import { createClient as createBrowserClient } from '@supabase/supabase-js';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { MapPin, Phone, Globe, Star, ShieldCheck, Zap } from 'lucide-react';
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -62,7 +63,7 @@ export default async function BusinessProfilePage({ params }: Props) {
                 <h1 className="text-2xl font-bold text-white">{business.business_name}</h1>
                 {business.verified && (
                   <span className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                    ✓ Verified Business
+                    Verified
                   </span>
                 )}
               </div>
@@ -72,13 +73,13 @@ export default async function BusinessProfilePage({ params }: Props) {
                   <span className="bg-white/5 px-2.5 py-0.5 rounded-full text-xs">{business.niche}</span>
                 )}
                 {business.city && business.state && (
-                  <span>📍 {business.city}, {business.state}</span>
+                  <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{business.city}, {business.state}</span>
                 )}
                 {business.phone && (
-                  <a href={`tel:${business.phone}`} className="hover:text-white transition-colors">📞 {business.phone}</a>
+                  <a href={`tel:${business.phone}`} className="flex items-center gap-1 hover:text-white transition-colors"><Phone className="w-3.5 h-3.5" />{business.phone}</a>
                 )}
                 {business.website && (
-                  <a href={business.website} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors truncate">🌐 {business.website}</a>
+                  <a href={business.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-white transition-colors truncate"><Globe className="w-3.5 h-3.5" />{business.website}</a>
                 )}
               </div>
 
@@ -139,15 +140,15 @@ export default async function BusinessProfilePage({ params }: Props) {
         {/* Trust Signals */}
         <div className="grid grid-cols-3 gap-4">
           <div className="bg-[#0F1729] border border-white/[0.08] rounded-xl p-5 text-center">
-            <p className="text-2xl font-bold text-white mb-1">⭐</p>
+            <Star className="w-6 h-6 text-amber-400 mx-auto mb-2" />
             <p className="text-sm text-slate-400">Rated on ProvenQuote</p>
           </div>
           <div className="bg-[#0F1729] border border-white/[0.08] rounded-xl p-5 text-center">
-            <p className="text-2xl font-bold text-white mb-1">🛡</p>
+            <ShieldCheck className="w-6 h-6 text-blue-400 mx-auto mb-2" />
             <p className="text-sm text-slate-400">{business.verified ? 'Verified Pro' : 'Registered Pro'}</p>
           </div>
           <div className="bg-[#0F1729] border border-white/[0.08] rounded-xl p-5 text-center">
-            <p className="text-2xl font-bold text-white mb-1">⚡</p>
+            <Zap className="w-6 h-6 text-emerald-400 mx-auto mb-2" />
             <p className="text-sm text-slate-400">Fast Response</p>
           </div>
         </div>
