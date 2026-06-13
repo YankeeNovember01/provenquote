@@ -13,6 +13,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             <Link href="/leads" className="hover:text-white transition-colors">Buy Leads</Link>
             <Link href="/how-it-works" className="hover:text-white transition-colors">How It Works</Link>
             <Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link>
+            <Link href="/partnership" className="hover:text-white transition-colors">Partnership</Link>
           </nav>
           <div className="flex items-center gap-3">
             <Link href="/sign-in" className="text-sm font-medium text-slate-400 hover:text-white transition-colors">
