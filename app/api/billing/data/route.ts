@@ -2,10 +2,23 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@/lib/supabase/server';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-04-22.dahlia' });
+let stripe: Stripe | null = null;
+
+if (process.env.STRIPE_SECRET_KEY) {
+  stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2026-04-22.dahlia' });
+}
 
 export async function GET() {
   try {
+    if (!stripe) {
+      return NextResponse.json({
+        invoices: [],
+        paymentMethod: null,
+        subscriptions: [],
+        hasStripe: false,
+      });
+    }
+
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -27,15 +40,15 @@ export async function GET() {
 
     // Fetch last 10 invoices, payment methods, and active subscriptions in parallel
     const [invoices, paymentMethods, subscriptions] = await Promise.all([
-      stripe.invoices.list({
+      stripe!.invoices.list({
         customer: business.stripe_customer_id,
         limit: 10,
       }),
-      stripe.paymentMethods.list({
+      stripe!.paymentMethods.list({
         customer: business.stripe_customer_id,
         type: 'card',
       }),
-      stripe.subscriptions.list({
+      stripe!.subscriptions.list({
         customer: business.stripe_customer_id,
         status: 'active',
       }),
