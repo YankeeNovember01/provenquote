@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   ShoppingCart, Inbox, Building2, FileText, MessageSquare,
-  User, CreditCard, BarChart2,
+  User, CreditCard, BarChart2, TrendingUp,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -38,6 +38,7 @@ export default function DashboardNav({ newLeadCount }: { newLeadCount: number })
     {
       label: 'My Business',
       items: [
+        { href: '/dashboard/briefing', label: 'Executive Briefing', icon: TrendingUp },
         { href: '/dashboard/profile', label: 'Business Profile', icon: User },
         { href: '/dashboard/billing', label: 'Billing', icon: CreditCard },
         { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart2 },
