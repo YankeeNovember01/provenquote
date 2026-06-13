@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server';
-import Stripe from 'stripe';
 import { createClient } from '@/lib/supabase/server';
+import { getStripe } from '@/lib/stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2026-04-22.dahlia',
-});
+export const dynamic = 'force-dynamic';
 
 const BONUS_TIERS = [
   { min: 5000, bonus: 0.20 },
@@ -23,6 +21,7 @@ function getBonusPct(amount: number): number {
 }
 
 export async function POST(request: Request) {
+  const stripe = getStripe();
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
