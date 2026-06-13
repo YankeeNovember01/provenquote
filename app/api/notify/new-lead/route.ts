@@ -58,10 +58,7 @@ function buildLeadNotificationEmail({
   `;
 }
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+export const dynamic = 'force-dynamic';
 
 // POST /api/notify/new-lead
 // Receives { leadId: string } from provenquote.com
@@ -69,6 +66,10 @@ const supabase = createClient(
 // updates the lead with tenant_id + status, then sends an email notification.
 // Non-breaking: always returns 200 even if the lead isn't found.
 export async function POST(request: Request) {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
   try {
     const body = await request.json().catch(() => ({}));
     const { leadId, leadPrice, priceRange } = body as {

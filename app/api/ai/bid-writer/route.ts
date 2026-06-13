@@ -2,9 +2,10 @@ import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@/lib/supabase/server';
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
+  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
